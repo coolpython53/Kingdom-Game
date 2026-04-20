@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Kingdom Expansion</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{width:100%;height:100%;overflow:hidden;font-family:system-ui,sans-serif;background:#2a4519;}
+#cw{position:fixed;inset:0;cursor:default;}canvas#W{display:block;}
+#hud{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:5px;flex-wrap:wrap;padding:5px 10px;background:rgba(255,255,255,.96);border-bottom:.5px solid #ddd;pointer-events:all;}
+.stat{display:flex;flex-direction:column;align-items:center;min-width:50px;}.stat-label{font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.05em;}.stat-val{font-size:14px;font-weight:500;}.stat-val.danger{color:#E24B4A;}
+.sep{width:.5px;height:24px;background:#e0e0e0;}
+#hud-right{margin-left:auto;display:flex;gap:4px;align-items:center;}
+.hbtn{padding:4px 8px;border-radius:6px;border:.5px solid #ccc;background:#fafaf8;font-size:11px;cursor:pointer;font-weight:500;white-space:nowrap;}
+.hbtn:hover{background:#f0efe9;}.hbtn.red{background:#fff5f5;border-color:#f9c;color:#a03;}.hbtn.grn{background:#e8f5e0;border-color:#5a9e30;color:#2d5a10;}
+#player-badge{padding:3px 9px;border-radius:16px;font-size:11px;font-weight:600;color:#fff;white-space:nowrap;}
+#sidebar{position:fixed;right:0;top:40px;bottom:0;width:196px;background:rgba(255,255,255,.97);border-left:.5px solid #ddd;display:flex;flex-direction:column;overflow-y:auto;z-index:20;pointer-events:all;}
+.panel{padding:7px 9px;border-bottom:.5px solid #eee;}.panel h3{font-size:9px;font-weight:500;color:#888;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;}
+.abtn{display:block;width:100%;text-align:left;padding:4px 7px;margin-bottom:2px;border-radius:5px;border:.5px solid #ccc;background:#fafaf8;color:#1a1a1a;font-size:10.5px;cursor:pointer;transition:background .1s;}
+.abtn:hover:not(:disabled){background:#f0efe9;border-color:#aaa;}.abtn:disabled{opacity:.3;cursor:not-allowed;}
+.abtn .cost{float:right;color:#888;font-size:10px;}.abtn.active{background:#deeefb;border-color:#378ADD;color:#0C447C;}
+.abtn.grn{background:#e8f5e0;border-color:#5a9e30;color:#2d5a10;}.abtn.grn.active{background:#b5e0a0;border-color:#1D9E75;}
+.abtn.dbg{border-color:#f9c;color:#a03;background:#fff5f5;}
+#sel-title{font-weight:500;font-size:11px;margin-bottom:2px;}#sel-desc{font-size:10px;color:#888;line-height:1.5;}
+#predict-panel,#troop-info,#tech-display{font-size:10px;color:#777;line-height:1.5;}
+#log-entries{font-size:10px;color:#666;line-height:1.6;max-height:120px;overflow-y:auto;}
+.le{padding:1px 0;border-bottom:.5px solid #f0f0f0;}.le.bad{color:#c33;}.le.good{color:#1D9E75;}.le.warn{color:#BA7517;}
+#disaster-banner,#cam-banner{position:fixed;top:40px;left:0;right:196px;z-index:25;display:none;padding:5px 12px;font-size:12px;font-weight:600;text-align:center;pointer-events:none;}
+#disaster-banner{background:rgba(255,238,238,.97);border-bottom:1px solid #E24B4A;color:#a03;}
+#cam-banner{background:rgba(230,241,251,.97);border-bottom:1px solid #378ADD;color:#185FA5;}
+#alert-flash{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:50;font-size:26px;font-weight:700;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.6);pointer-events:none;display:none;text-align:center;white-space:nowrap;}
+#claim-toast{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);background:#1D9E75;color:#fff;padding:6px 14px;border-radius:18px;font-size:12px;font-weight:500;display:none;pointer-events:none;z-index:30;}
+#ctx-menu{position:fixed;z-index:40;background:rgba(255,255,255,.98);border:.5px solid #ccc;border-radius:10px;padding:6px;min-width:150px;max-height:70vh;overflow-y:auto;box-shadow:0 4px 16px rgba(0,0,0,.15);display:none;}
+#ctx-menu .cm-title{font-size:10px;font-weight:500;color:#555;padding:2px 4px 5px;border-bottom:.5px solid #eee;margin-bottom:4px;}
+#ctx-menu button{display:block;width:100%;text-align:left;padding:4px 7px;border-radius:5px;border:none;background:none;font-size:11px;cursor:pointer;color:#1a1a1a;}
+#ctx-menu button:hover{background:#f0efe9;}#ctx-menu button.disabled{opacity:.35;cursor:default;pointer-events:none;}
+#ctx-menu .cm-cost{float:right;font-size:10px;color:#888;}
+#mode-screen{position:fixed;inset:0;background:#2a4519;display:flex;align-items:center;justify-content:center;z-index:100;overflow-y:auto;}
+#mode-box{background:#fff;border-radius:14px;padding:24px 28px;max-width:380px;width:90%;text-align:center;margin:auto;}
+#mode-box h1{font-size:20px;font-weight:600;margin-bottom:5px;}#mode-box p{font-size:12px;color:#666;margin-bottom:16px;}
+.mode-btn{display:block;width:100%;padding:9px;margin-bottom:6px;border-radius:9px;border:.5px solid #ccc;background:#fafaf8;font-size:13px;font-weight:500;cursor:pointer;}
+.mode-btn:hover{background:#f0efe9;}
+#overlay-wrap{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:100;overflow-y:auto;}
+#overlay-wrap.show{display:flex;}
+#overlay-box{background:#fff;border-radius:12px;padding:22px 26px;max-width:380px;width:90%;max-height:90vh;overflow-y:auto;}
+#overlay-box h2{font-size:18px;font-weight:500;margin-bottom:8px;text-align:center;}
+#overlay-box p{font-size:12px;color:#666;margin-bottom:8px;line-height:1.5;text-align:center;}
+.ov-btns{display:flex;gap:7px;justify-content:center;margin-top:10px;}
+.ov-btns button{padding:7px 18px;border-radius:7px;border:.5px solid #ccc;background:#f0efe9;cursor:pointer;font-size:12px;}
+#leaderboard{margin-top:8px;}#leaderboard h3{font-size:11px;font-weight:500;margin-bottom:4px;color:#555;}
+.lb-row{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:.5px solid #f0f0f0;}
+.lb-row .lb-rank{color:#888;min-width:20px;}.lb-row .lb-score{font-weight:500;color:#378ADD;}
+#initials-form{margin-top:8px;display:none;text-align:center;}
+#initials-form input{width:80px;text-align:center;font-size:16px;text-transform:uppercase;padding:6px;border:.5px solid #ccc;border-radius:6px;margin-right:6px;}
+#initials-form button{padding:6px 14px;border-radius:6px;border:.5px solid #5a9e30;background:#e8f5e0;cursor:pointer;font-size:12px;}
+#minimap{position:fixed;left:9px;top:48px;width:96px;height:96px;border-radius:7px;border:.5px solid rgba(255,255,255,.3);background:rgba(42,69,25,.9);z-index:20;overflow:hidden;cursor:pointer;}
+#zoom-btns{position:fixed;left:9px;bottom:14px;display:flex;flex-direction:column;gap:4px;z-index:20;}
+.zbtn{width:28px;height:28px;border-radius:6px;border:.5px solid #ccc;background:rgba(255,255,255,.92);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.zbtn:hover{background:#f0efe9;}
+#pred-log-btn{position:fixed;left:9px;bottom:50px;z-index:20;padding:3px 7px;font-size:9px;}
+#pred-log-panel{position:fixed;left:9px;bottom:90px;width:220px;max-height:200px;overflow-y:auto;background:rgba(255,255,255,.97);border-radius:9px;border:.5px solid #ccc;padding:9px;z-index:20;display:none;font-size:10px;color:#555;line-height:1.6;}
+#pred-log-panel h4{font-size:10px;font-weight:500;margin-bottom:4px;color:#333;}.pl-entry{padding:1px 0;border-bottom:.5px solid #eee;}
+#tech-btn{position:fixed;left:48px;bottom:50px;z-index:20;padding:3px 7px;font-size:9px;}
+#tech-popup{position:fixed;left:9px;bottom:90px;width:270px;max-height:300px;overflow-y:auto;background:rgba(255,255,255,.97);border-radius:9px;border:.5px solid #ccc;padding:9px;z-index:20;display:none;font-size:10px;color:#555;}
+#tech-popup h4{font-size:10px;font-weight:500;margin-bottom:5px;}
+.tech-tree{margin-bottom:8px;}.tech-tree-name{font-size:9px;font-weight:600;text-transform:uppercase;color:#888;margin-bottom:2px;}
+.tech-lvl{display:inline-block;padding:1px 4px;border-radius:3px;background:#f0efe9;border:.5px solid #ccc;font-size:9px;margin:1px;}
+.tech-lvl.active{background:#deeefb;border-color:#378ADD;color:#185FA5;}
+#research-center-popup{position:fixed;right:205px;top:50px;width:260px;max-height:80vh;overflow-y:auto;background:#fff;border-radius:10px;border:.5px solid #ccc;padding:10px;z-index:30;display:none;}
+#research-center-popup h4{font-size:11px;font-weight:600;margin-bottom:7px;}
+.rc-tree{margin-bottom:8px;}.rc-tree-name{font-size:10px;font-weight:600;color:#555;margin-bottom:4px;}
+.rc-item{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:.5px solid #eee;font-size:10px;}
+.rc-item button{padding:2px 8px;border-radius:4px;border:.5px solid #5a9e30;background:#e8f5e0;cursor:pointer;font-size:9px;font-weight:500;}
+.rc-item button:disabled{opacity:.35;cursor:not-allowed;}
+.rc-item .rc-desc{color:#666;flex:1;margin-right:4px;}
+.rc-item .rc-cost{color:#888;font-size:9px;margin-right:5px;}
+#tutorial-overlay{position:fixed;inset:0;z-index:80;pointer-events:none;display:none;}
+#tutorial-box{position:fixed;z-index:81;background:#fff;border-radius:12px;padding:14px 16px;max-width:290px;width:88%;box-shadow:0 4px 24px rgba(0,0,0,.25);pointer-events:all;}
+#tutorial-box h3{font-size:13px;font-weight:600;margin-bottom:6px;}
+#tutorial-box p{font-size:11px;color:#444;line-height:1.6;margin-bottom:9px;white-space:pre-line;}
+#tutorial-box .tut-step{font-size:9px;color:#aaa;margin-bottom:5px;}
+.tut-btns{display:flex;gap:6px;justify-content:flex-end;}
+.tut-btns button{padding:4px 12px;border-radius:6px;border:.5px solid #ccc;background:#f0efe9;cursor:pointer;font-size:11px;font-weight:500;}
+.tut-btns button.primary{background:#deeefb;border-color:#378ADD;color:#185FA5;}
+.tut-highlight{position:fixed;border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);z-index:80;pointer-events:none;transition:all .3s;}
+/* Siege countdown */
+#siege-banner{position:fixed;top:40px;left:0;right:196px;z-index:26;display:none;padding:5px 12px;font-size:12px;font-weight:600;text-align:center;pointer-events:none;background:rgba(255,245,220,.97);border-bottom:1px solid #BA7517;color:#633806;}
+</style>
+</head>
+<body>
+
+<div id="mode-screen">
+  <div id="mode-box">
+    <h1>Kingdom Expansion</h1>
+    <p>Build, defend, and conquer.</p>
+    <button class="mode-btn" onclick="startGame(1)">🏰 1 Player</button>
+    <button class="mode-btn" onclick="startGame(2)">⚔️ 2 Players (vs)</button>
+    <button class="mode-btn" onclick="startGame(3)">🗡️ 3 Players (FFA)</button>
+    <button class="mode-btn" onclick="startGame('2v2')">🛡️ 2v2 Teams</button>
+    <button class="mode-btn" onclick="startGame(4)">👑 4 Players (FFA)</button>
+    <button class="mode-btn" onclick="startGame('2v2survival')">🤝 2v2 Survival</button>
+    <button class="mode-btn" onclick="startGame('siege')">🏯 Under Siege</button>
+    <button class="mode-btn" style="background:#deeefb;border-color:#378ADD;color:#185FA5;" onclick="startTutorial()">📖 Tutorial</button>
+  </div>
+</div>
+
+<div id="cw"><canvas id="W"></canvas></div>
+
+<div id="tutorial-overlay">
+  <div class="tut-highlight" id="tut-highlight"></div>
+  <div id="tutorial-box">
+    <div class="tut-step" id="tut-step-label">Step 1 / 12</div>
+    <h3 id="tut-title">Welcome!</h3>
+    <p id="tut-body"></p>
+    <div class="tut-btns">
+      <button id="tut-skip">Skip</button>
+      <button class="primary" id="tut-next">Next →</button>
+    </div>
+  </div>
+</div>
+
+<div id="hud">
+  <div id="player-badge">P1</div>
+  <div class="sep"></div>
+  <div class="stat"><span class="stat-label">Gold</span><span class="stat-val" id="hud-gold">$10</span></div>
+  <div class="sep"></div>
+  <div class="stat"><span class="stat-label">WF</span><span class="stat-val" id="hud-wf">0</span></div>
+  <div class="sep"></div>
+  <div class="stat"><span class="stat-label">Round</span><span class="stat-val" id="hud-round">1</span></div>
+  <div class="sep"></div>
+  <div class="stat"><span class="stat-label">Castle HP</span><span class="stat-val" id="hud-starthp">20</span></div>
+  <div class="sep"></div>
+  <div class="stat"><span class="stat-label">Score</span><span class="stat-val" id="hud-score">0</span></div>
+  <div id="hud-right">
+    <div id="hud-enemies" style="display:flex;gap:6px;align-items:center;margin-right:6px;"></div>
+    <button class="hbtn" id="btn-center">⌂</button>
+    <button class="hbtn" id="btn-switch-center">⇄</button>
+    <button class="hbtn grn" id="btn-end-turn">End Turn →</button>
+    <button class="hbtn red" id="btn-restart">↺</button>
+  </div>
+</div>
+
+<div id="disaster-banner"></div><div id="cam-banner"></div><div id="siege-banner"></div><div id="alert-flash"></div>
+
+<div id="sidebar">
+  <div class="panel">
+    <h3>Build</h3>
+    <button class="abtn" id="btn-buy-land">Buy Land <span class="cost">$1</span></button>
+    <button class="abtn grn" id="btn-claim-wild">Claim Wild <span class="cost">free</span></button>
+    <button class="abtn" id="btn-plant-crop">Plant Crop <span class="cost">$1</span></button>
+    <button class="abtn" id="btn-build-house">Build House <span class="cost">$2</span></button>
+    <button class="abtn" id="btn-add-water">Add Water <span class="cost">$5</span></button>
+    <button class="abtn" id="btn-build-research">Research Station <span class="cost">$3</span></button>
+    <button class="abtn" id="btn-build-rescenter">Research Center <span class="cost">$15</span></button>
+    <button class="abtn" id="btn-open-rescenter" style="display:none">🏛 Buy Upgrades (RC) <span class="cost">$20/lvl</span></button>
+    <div id="rc-inline" style="display:none;background:#f8f6ff;border-radius:6px;padding:5px 7px;margin-bottom:4px;border:.5px solid #c0a8ee;"></div>
+    <button class="abtn" id="btn-build-barracks">Barracks <span class="cost">$10</span></button>
+    <button class="abtn" id="btn-upgrade-barracks">Upgrade Barracks <span class="cost">$15</span></button>
+    <button class="abtn" id="btn-build-techlab">Tech Lab <span class="cost">$20</span></button>
+    <button class="abtn" id="btn-build-cannon">Cannon <span class="cost">$4</span></button>
+    <button class="abtn" id="btn-build-airport">Airport <span class="cost">$25</span></button>
+    <button class="abtn" id="btn-build-wall">Build Wall <span class="cost">$7</span></button>
+    <button class="abtn" id="btn-repair-wall">Repair Wall <span class="cost">$1/hp</span></button>
+    <button class="abtn" id="btn-build-castle">Build Castle <span class="cost">$100</span></button>
+  </div>
+  <div class="panel">
+    <h3>Harvest / Farm</h3>
+    <button class="abtn" id="btn-harvest-gold">Harvest ($1) <span class="cost">net +$2</span></button>
+    <button class="abtn" id="btn-harvest-wf">Harvest (WF) <span class="cost">+$3</span></button>
+    <button class="abtn grn" id="btn-harvest-all">Harvest All ($) <span class="cost">auto</span></button>
+    <button class="abtn grn" id="btn-harvest-wf-all">Harvest All (WF) <span class="cost">auto</span></button>
+    <button class="abtn" id="btn-plant-all">Plant All Land <span class="cost">auto</span></button>
+    <button class="abtn" id="btn-repair-start">Repair Castle <span class="cost">$5/+1hp</span></button>
+    <button class="abtn" id="btn-clear-ruins">Clear Ruins <span class="cost">$1</span></button>
+    <button class="abtn" id="btn-sell">Sell Tile</button>
+  </div>
+  <div class="panel">
+    <h3>Troops</h3>
+    <button class="abtn" id="btn-recruit-troop">Recruit Soldier <span class="cost">1WF</span></button>
+    <button class="abtn" id="btn-recruit-sniper">Recruit Sniper <span class="cost">3WF+$2</span></button>
+    <button class="abtn" id="btn-recruit-tank">Recruit Tank <span class="cost">3WF+$7</span></button>
+    <button class="abtn" id="btn-recruit-mech">Recruit Mech <span class="cost">40WF+$40</span></button>
+    <button class="abtn" id="btn-recruit-bomber">Recruit Bomber <span class="cost">6WF+$11</span></button>
+    <button class="abtn" id="btn-recruit-carrier">Recruit Carrier <span class="cost">12WF+$20-30</span></button>
+    <button class="abtn" id="btn-upgrade-troop">Upgrade Troop <span class="cost">+WF</span></button>
+    <button class="abtn grn" id="btn-move-troop">Move Troop <span class="cost">→click</span></button>
+    <button class="abtn" id="btn-attack">Attack Mode <span class="cost">WF</span></button>
+    <div id="troop-info" style="margin-top:3px;font-size:10px;color:#666;"></div>
+  </div>
+  <div class="panel">
+    <h3>Scouts</h3>
+    <button class="abtn" id="btn-predict">Predict Disaster <span class="cost">1WF</span></button>
+    <button class="abtn dbg" id="btn-force-heat">🔥 Force Heat</button>
+    <button class="abtn dbg" id="btn-force-wind">🌪 Force Wind</button>
+    <button class="abtn dbg" id="btn-force-invasion">⚔️ Force Invasion</button>
+    <button class="abtn dbg" id="btn-add-gold">💰 +$100</button>
+  </div>
+  <div class="panel">
+    <h3>Selected</h3>
+    <p id="sel-title">None</p>
+    <p id="sel-desc">Click tile to select, click again for actions.</p>
+  </div>
+  <div class="panel"><h3>Tech</h3><div id="tech-display">Build research station.</div></div>
+  <div class="panel"><h3>Scouts</h3><p id="predict-panel">Use WF to predict.</p></div>
+  <div class="panel" style="flex:1;display:flex;flex-direction:column;"><h3>Log</h3><div id="log-entries"></div></div>
+</div>
+
+<div id="overlay-wrap">
+  <div id="overlay-box">
+    <h2 id="ov-title">Game Over</h2>
+    <p id="ov-msg"></p>
+    <div id="initials-form">
+      <input id="initials-input" maxlength="3" placeholder="AAA">
+      <button id="initials-submit">Save Score</button>
+    </div>
+    <div id="leaderboard"></div>
+    <div class="ov-btns">
+      <button id="ov-menu">Menu</button>
+      <button id="ov-restart">Play Again</button>
+    </div>
+  </div>
+</div>
+
+<div id="minimap"><canvas id="MC" width="96" height="96"></canvas></div>
+<div id="zoom-btns"><button class="zbtn" id="btn-zi">+</button><button class="zbtn" id="btn-zo">−</button></div>
+<button class="zbtn" id="pred-log-btn" style="position:fixed;left:9px;bottom:50px;z-index:20;width:auto;padding:3px 7px;font-size:9px;">📜 Preds</button>
+<div id="pred-log-panel"><h4>Prediction History</h4><div id="pred-log-entries"></div></div>
+<button class="zbtn" id="tech-btn" style="position:fixed;left:48px;bottom:50px;z-index:20;width:auto;padding:3px 7px;font-size:9px;">🔬 Tech</button>
+<div id="tech-popup"><h4>Tech Trees</h4><div id="tech-popup-content"></div></div>
+<div id="research-center-popup"><h4>🔬 Research Center</h4><div id="rc-content"></div><button onclick="document.getElementById('research-center-popup').style.display='none'" style="margin-top:6px;font-size:10px;padding:3px 8px;border-radius:5px;border:.5px solid #ccc;background:#f0efe9;cursor:pointer;">Close</button></div>
+<div id="claim-toast"></div>
+
+<script>
+// ═══════════════════════════════════════════
+// TILE TYPES
+// ═══════════════════════════════════════════
+const T={EMPTY:'empty',START:'start',LAND:'land',CROP:'crop',MATURE:'mature_crop',
+  HOUSE:'house',RUINS:'ruins',FIRE:'fire',WATER:'water',WILD:'wild',WILD_MATURE:'wild_mature',
+  BARRACKS:'barracks',RESEARCH:'research',RESCENTER:'rescenter',TECHLAB:'techlab',
+  CANNON:'cannon',AIRPORT:'airport',WALL:'wall'};
+const FLAMMABLE=[T.CROP,T.MATURE,T.HOUSE,T.WILD,T.WILD_MATURE];
+const WIND_IMMUNE=[T.START,T.LAND,T.RUINS,T.FIRE,T.WATER,T.WALL];
+const EMO={start:'🏰',land:'🟩',crop:'🌱',mature_crop:'🌾',house:'🏠',ruins:'🪨',fire:'🔥',
+  water:'💧',wild:'🌿',wild_mature:'🌻',barracks:'🏯',research:'🔬',rescenter:'🏛',
+  techlab:'⚗️',cannon:'💣',airport:'✈️',wall:'🧱'};
+const TCOLORS={
+  start:['#deeefb','#378ADD'],land:['#e4f0d4','#639922'],crop:['#faeeda','#EF9F27'],
+  mature_crop:['#fff3c0','#BA7517'],house:['#eeedfe','#7F77DD'],ruins:['#e0ddd4','#888780'],
+  fire:['#fdd','#E24B4A'],water:['#cce8f8','#185FA5'],wild:['#d0edaf','#5a9e30'],wild_mature:['#eef7c0','#7ab820'],
+  barracks:['#fce8c8','#c87820'],research:['#e8f0fe','#5567cc'],rescenter:['#f0e8fe','#7755bb'],
+  techlab:['#f0e8fe','#8844cc'],cannon:['#f5e0e0','#aa3333'],airport:['#e0f5ff','#1188cc'],
+  wall:['#d8d0c0','#665544']
+};
+const PCOLORS=[
+  ['rgba(55,138,221,0.18)','#378ADD','#185FA5'],
+  ['rgba(212,83,126,0.18)','#D4537E','#993556'],
+  ['rgba(239,159,39,0.18)','#EF9F27','#BA7517'],
+  ['rgba(93,202,165,0.18)','#5DCAA5','#0F6E56'],
+];
+// Soldier ranks: [spd,dmg,hp,wfCost,barracksLvlReq]
+const SOLDIER_RANKS=[[1,1,2,1,1],[1,1,1,2,2],[0,2,2,2,2],[2,3,2,3,3],[3,3,3,3,3],[4,4,4,5,4]];
+const BARRACKS_BASE_HP=10,BARRACKS_UPG_COST=15;
+const INV_WAVES=[
+  {count:2,spd:1,dmg:1,hp:2},{count:3,spd:1,dmg:1,hp:3},{count:3,spd:2,dmg:2,hp:3},
+  {count:4,spd:2,dmg:2,hp:4},{count:5,spd:2,dmg:3,hp:5},{count:5,spd:3,dmg:3,hp:6},
+  {count:6,spd:3,dmg:4,hp:7},{count:8,spd:4,dmg:5,hp:8}
+];
+// Siege mode wave patterns [soldiers, tanks]
+const SIEGE_WAVES=[
+  [4,0],[6,0],[4,1],[6,1],[6,2],[0,4],[0,4],[0,6],[0,6],[0,8],[0,11]
+];
+const TILE_PX=52,MIN_ZOOM=0.22,MAX_ZOOM=2.4,FIELD_ZONE=14,FIELD_PROB=0.18;
+const TECH_NAMES=['Farming','Houses','Water','War','Defence'];
+// Per-mode leaderboard keys
+const LB_KEYS={1:'lb_1p',2:'lb_2p',3:'lb_3p','2v2':'lb_2v2',4:'lb_4p','2v2survival':'lb_surv','siege':'lb_siege'};
+
+// ═══════════════════════════════════════════
+// TECH FX — all 5 trees
+// ═══════════════════════════════════════════
+function techFx(pid){
+  if(!G||!G.players[pid])return _defaultFx();
+  const lvls=G.players[pid].tech;
+  const f=lvls[0]||1,h=lvls[1]||1,w=lvls[2]||1,wa=lvls[3]||1,de=lvls[4]||1;
+
+  // Farming (1-11, then repeat +1 crop value)
+  let cropChanceBonus=0,cropNearWaterBonus=0,matureCropBonus=0;
+  if(f>=3){cropChanceBonus+=0.04;cropNearWaterBonus+=0.05;}
+  if(f>=4){cropChanceBonus+=0.06;cropNearWaterBonus+=0.08;}
+  if(f>=5)matureCropBonus+=1;if(f>=6)matureCropBonus+=1;
+  if(f>=7){cropChanceBonus+=0.06;cropNearWaterBonus+=0.10;}
+  if(f>=8){cropChanceBonus+=0.07;cropNearWaterBonus+=0.11;}
+  if(f>=9){cropChanceBonus+=0.07;cropNearWaterBonus+=0.11;}
+  if(f>=10)matureCropBonus+=2;if(f>=11)matureCropBonus+=3;
+  if(f>11)matureCropBonus+=(f-11); // repeating: +1 crop value per level
+
+  // Houses (1-11, then repeat +1 WF/rnd)
+  let houseHpBonus=0,houseWfBonus=0,houseMinHpSell=2,housePriceDiscount=0;
+  if(h>=3){houseHpBonus+=1;houseMinHpSell+=1;}
+  if(h>=4)houseWfBonus+=1;if(h>=5)houseHpBonus+=1;if(h>=6)houseWfBonus+=1;
+  if(h>=7)houseHpBonus+=1;if(h>=8)housePriceDiscount+=1;if(h>=9)houseWfBonus+=2;
+  if(h>=11)houseHpBonus+=1;
+  if(h>11)houseWfBonus+=(h-11); // repeating: +1 WF per level
+
+  // Water (1-11, then repeat +1 crop range)
+  let waterPriceDiscount=0,waterCropRange=1,waterFireRange=1;
+  if(w>=3)waterPriceDiscount+=1;if(w>=4)waterCropRange+=1;if(w>=5)waterFireRange+=1;
+  if(w>=7){waterCropRange+=1;waterFireRange+=1;}if(w>=9)waterFireRange+=1;if(w>=11)waterCropRange+=1;
+  if(w>11)waterCropRange+=(w-11); // repeating: +1 crop range per level
+
+  // War (1-49+, then repeat cannon +1 HP)
+  let soldierDmgBonus=0,barracksCostDiscount=0,barracksUgpCostDiscount=0,soldierSpdBonus=0,soldierHpBonus=0;
+  let hasTank=false,tankRange=0,tankTargets=1,tankHpBonus=0,tankCostDiscount=0,tankAoe=false,tankFireImmune=false;
+  let hasCannon=false,cannonRange=8,cannonDmgBonus=0,cannonHpBonus=0;
+  let hasAirport=false,hasCarrier=false;
+  let carrierSpdBonus=0,carrierHpBonus=0,carrierCostDiscount=0,carrierExpandedCargo=false;
+  let hasMech=false,mechDmgBonus=0,mechSoldierDiscount=0,mechGoldDiscount=0,mechWfDiscount=0;
+  let hasSniper=false,sniperHpBonus=0,sniperSpdBonus=0,sniperDmgBonus=0;
+  if(wa>=3)soldierDmgBonus+=1;if(wa>=4)barracksCostDiscount+=1;if(wa>=5)barracksUgpCostDiscount+=2;
+  if(wa>=6)soldierSpdBonus+=1;if(wa>=7)hasTank=true;if(wa>=8){tankRange+=1;}if(wa>=9)tankTargets+=1;
+  if(wa>=10)tankHpBonus+=1;if(wa>=11)soldierSpdBonus+=1;if(wa>=12)tankCostDiscount+=1;
+  if(wa>=14)tankAoe=true;if(wa>=15)hasCannon=true;if(wa>=16)cannonRange+=1;
+  if(wa>=17)cannonDmgBonus+=1;if(wa>=18)soldierHpBonus+=1;if(wa>=19)hasAirport=true;
+  if(wa>=20)hasCarrier=true;
+  if(wa>=23)carrierSpdBonus+=3;if(wa>=24)carrierHpBonus+=5;if(wa>=25)carrierCostDiscount+=5;
+  if(wa>=26)carrierSpdBonus+=3;if(wa>=27)carrierHpBonus+=5;if(wa>=28)carrierCostDiscount+=5;
+  if(wa>=29)carrierExpandedCargo=true;
+  if(wa>=31)tankRange+=1;if(wa>=32)tankFireImmune=true;if(wa>=33)cannonDmgBonus+=1;
+  if(wa>=34)hasMech=true;if(wa>=35)mechDmgBonus+=5;
+  if(wa>=36)hasSniper=true;if(wa>=37)sniperHpBonus+=1;if(wa>=38)sniperSpdBonus+=1;if(wa>=39)sniperDmgBonus+=2;
+  if(wa>=40)mechSoldierDiscount+=5;if(wa>=41)mechSoldierDiscount+=7;if(wa>=42)mechSoldierDiscount+=11;
+  if(wa>=43)mechGoldDiscount+=8;if(wa>=44)mechGoldDiscount+=6;if(wa>=45)mechGoldDiscount+=10;
+  if(wa>=46)mechWfDiscount+=4;if(wa>=47)mechWfDiscount+=3;if(wa>=48)mechWfDiscount+=6;
+  if(wa>49)cannonHpBonus+=(wa-49); // repeating: +1 cannon HP per level
+
+  // Defence (1-10, then repeat wall +2 hp)
+  let hasWall=false,wallHpBonus=0,wallRepairCost=1,wallDmgReduction=0,wallBlocksBombers=false,wallBlocksCarriers=false;
+  let cannonDefHpBonus=0,cannonDefRangeBonus=0,cannonDefDmgBonus=0;
+  if(de>=1)hasWall=true;if(de>=2)wallHpBonus+=1;if(de>=3)wallBlocksBombers=true;
+  if(de>=5)wallRepairCost=0; // repair for $1/hp (still costs gold, just unlocked)
+  if(de>=6)wallDmgReduction+=1;if(de>=7)wallBlocksCarriers=true;
+  if(de>=8)cannonDefHpBonus+=2;if(de>=9)cannonDefRangeBonus+=1;if(de>=10)cannonDefDmgBonus+=2;
+  if(de>10)wallHpBonus+=2*(de-10); // repeating: +2 wall HP per level
+
+  return{
+    cropChanceBonus,cropNearWaterBonus,matureCropBonus,
+    houseHpBonus,houseWfBonus,houseMinHpSell,housePriceDiscount,
+    waterPriceDiscount,waterCropRange,waterFireRange,
+    soldierDmgBonus,barracksCostDiscount,barracksUgpCostDiscount,soldierSpdBonus,soldierHpBonus,
+    hasTank,tankRange,tankTargets,tankHpBonus,tankCostDiscount,tankAoe,tankFireImmune,
+    hasCannon,cannonRange,cannonDmgBonus,cannonHpBonus,hasAirport,hasCarrier,
+    carrierSpdBonus,carrierHpBonus,carrierCostDiscount,carrierExpandedCargo,
+    hasMech,mechDmgBonus,mechSoldierDiscount,mechGoldDiscount,mechWfDiscount,
+    hasSniper,sniperHpBonus,sniperSpdBonus,sniperDmgBonus,
+    hasWall,wallHpBonus,wallRepairCost,wallDmgReduction,wallBlocksBombers,wallBlocksCarriers,
+    cannonDefHpBonus,cannonDefRangeBonus,cannonDefDmgBonus
+  };
+}
+function _defaultFx(){
+  return{cropChanceBonus:0,cropNearWaterBonus:0,matureCropBonus:0,houseHpBonus:0,houseWfBonus:0,houseMinHpSell:2,housePriceDiscount:0,waterPriceDiscount:0,waterCropRange:1,waterFireRange:1,soldierDmgBonus:0,barracksCostDiscount:0,barracksUgpCostDiscount:0,soldierSpdBonus:0,soldierHpBonus:0,hasTank:false,tankRange:0,tankTargets:1,tankHpBonus:0,tankCostDiscount:0,tankAoe:false,tankFireImmune:false,hasCannon:false,cannonRange:8,cannonDmgBonus:0,cannonHpBonus:0,hasAirport:false,hasCarrier:false,carrierSpdBonus:0,carrierHpBonus:0,carrierCostDiscount:0,carrierExpandedCargo:false,hasMech:false,mechDmgBonus:0,mechSoldierDiscount:0,mechGoldDiscount:0,mechWfDiscount:0,hasSniper:false,sniperHpBonus:0,sniperSpdBonus:0,sniperDmgBonus:0,hasWall:false,wallHpBonus:0,wallRepairCost:1,wallDmgReduction:0,wallBlocksBombers:false,wallBlocksCarriers:false,cannonDefHpBonus:0,cannonDefRangeBonus:0,cannonDefDmgBonus:0};
+}
+
+// ═══════════════════════════════════════════
+// WORLD
+// ═══════════════════════════════════════════
+let world={};let G=null;let cam={x:0,y:0,zoom:1};let gameSeed=0;
+function key(r,c){return r+','+c;}function pk(k){const p=k.split(',');return{r:+p[0],c:+p[1]};}
+function gc(r,c){return world[key(r,c)]||null;}function sc(r,c,d){world[key(r,c)]=d;}function dc(r,c){delete world[key(r,c)];}
+function nbrs(r,c){return[[r-1,c],[r+1,c],[r,c-1],[r,c+1]];}
+function adjOwned(r,c,pid){return nbrs(r,c).some(([rr,cc])=>{const t=gc(rr,cc);return t&&t.owner===pid;});}
+function hash(x,y){let h=(gameSeed*2654435761)^(x*374761393)^(y*668265263);h=h>>>0;h=((h^(h>>>13))*1274126177)>>>0;return(h^(h>>>16))/0xFFFFFFFF;}
+function isWildAt(r,c){
+  if(G){for(const p of G.players){if(Math.abs(r-p.startR)<8&&Math.abs(c-p.startC)<8)return false;}}
+  const zr=Math.floor(r/FIELD_ZONE),zc=Math.floor(c/FIELD_ZONE);
+  if(hash(zr*997+1,zc*991+2)>FIELD_PROB)return false;
+  const fr=zr*FIELD_ZONE+Math.floor(hash(zr*13,zc*17)*FIELD_ZONE);
+  const fc=zc*FIELD_ZONE+Math.floor(hash(zr*19,zc*23)*FIELD_ZONE);
+  const rad=1+Math.floor(hash(zr*7,zc*11)*2.5);
+  if(Math.abs(r-fr)+Math.abs(c-fc)>rad)return false;
+  return hash(r*101+c*71+3,r*53+c*97+7)<0.72;
+}
+function lazyCell(r,c){
+  const k=key(r,c);if(world[k])return world[k];
+  if(isWildAt(r,c)){const t={type:hash(r*303+c*201+5,r*401+c*503+9)<0.4?T.WILD_MATURE:T.WILD,hp:2,owner:null,wild:true};world[k]=t;return t;}
+  return null;
+}
+
+// ═══════════════════════════════════════════
+// TROOPS
+// ═══════════════════════════════════════════
+let _tid=0;
+function makeTroop(pid,r,c,type='soldier',rank=0){
+  if(type==='soldier'){const[spd,dmg,hp]=SOLDIER_RANKS[rank];return{id:_tid++,owner:pid,r,c,type,rank,hp,moved:false};}
+  if(type==='invader')return{id:_tid++,owner:-1,r,c,type,hp:rank.hp,spd:rank.spd,dmg:rank.dmg,moved:false,targetPid:pid};
+  if(type==='tank')return{id:_tid++,owner:pid,r,c,type,hp:6,moved:false,hasActed:false};
+  if(type==='sniper')return{id:_tid++,owner:pid,r,c,type,hp:3,moved:false};
+  if(type==='mech')return{id:_tid++,owner:pid,r,c,type,hp:20,moved:false};
+  if(type==='bomber')return{id:_tid++,owner:pid,r,c,type,hp:10,moved:false};
+  if(type==='carrier')return{id:_tid++,owner:pid,r,c,type,hp:30,moved:false,cargo:[]};
+  return{id:_tid++,owner:pid,r,c,type,hp:4,moved:false};
+}
+function troopsAt(r,c){return G.troops.filter(t=>t.r===r&&t.c===c);}
+function troopAt(r,c,filter=null){return G.troops.find(t=>t.r===r&&t.c===c&&(!filter||t.type===filter))||null;}
+function cycleSelectTroop(r,c,pid){
+  const here=G.troops.filter(t=>t.r===r&&t.c===c&&t.owner===pid);
+  if(!here.length)return null;
+  const curIdx=here.findIndex(t=>t.id===G.selectedTroop);
+  return here[(curIdx+1)%here.length];
+}
+function troopSpdOf(tr){
+  if(tr.type==='soldier'){const fx=techFx(tr.owner);return SOLDIER_RANKS[tr.rank][0]+fx.soldierSpdBonus;}
+  if(tr.type==='sniper'){const fx=techFx(tr.owner);return 1+fx.sniperSpdBonus;}
+  if(tr.type==='tank')return 3;
+  if(tr.type==='mech')return 20;
+  if(tr.type==='bomber')return 7;
+  if(tr.type==='carrier'){const fx=techFx(tr.owner);return 17+fx.carrierSpdBonus;}
+  if(tr.type==='invader')return tr.spd;
+  return 1;
+}
+function troopDmgOf(tr){
+  if(tr.type==='soldier'){const fx=techFx(tr.owner);return SOLDIER_RANKS[tr.rank][1]+fx.soldierDmgBonus;}
+  if(tr.type==='sniper'){const fx=techFx(tr.owner);return 3+fx.sniperDmgBonus;}
+  if(tr.type==='tank')return 2;
+  if(tr.type==='mech'){const fx=techFx(tr.owner);return 20+fx.mechDmgBonus;}
+  if(tr.type==='bomber')return 2;
+  if(tr.type==='invader')return tr.dmg;
+  return 1;
+}
+function troopRangeOf(tr){
+  if(tr.type==='invader')return 0; // invaders always melee
+  if(tr.type==='sniper')return 12;
+  if(tr.type==='mech')return 20;
+  if(tr.type==='tank'){const fx=techFx(tr.owner);return 4+fx.tankRange;}
+  if(tr.type==='bomber')return 5;
+  return 0;
+}
+
+// ═══════════════════════════════════════════
+// LEADERBOARD (per-mode, top 3)
+// ═══════════════════════════════════════════
+function getLB(mode){try{return JSON.parse(localStorage.getItem(LB_KEYS[mode]||'lb_1p')||'[]');}catch{return[];}}
+function saveLB(mode,lb){localStorage.setItem(LB_KEYS[mode]||'lb_1p',JSON.stringify(lb));}
+function isTop3(mode,score){const lb=getLB(mode);return lb.length<3||score>lb[lb.length-1].score;}
+let _pendingScore=0,_pendingMode=1;
+function submitScore(score,mode,initials){
+  let lb=getLB(mode);
+  lb.push({score,initials:initials.toUpperCase().slice(0,3)});
+  lb.sort((a,b)=>b.score-a.score);lb=lb.slice(0,3);
+  saveLB(mode,lb);return lb;
+}
+function renderLeaderboard(mode){
+  const lb=getLB(mode||gameMode);
+  const el=document.getElementById('leaderboard');
+  if(!lb.length){el.innerHTML='<p style="font-size:11px;color:#aaa;text-align:center;">No scores yet.</p>';return;}
+  const modeNames={1:'1P',2:'2P vs',3:'3P FFA','2v2':'2v2',4:'4P FFA','2v2survival':'2v2 Surv','siege':'Siege'};
+  el.innerHTML=`<h3>🏆 ${modeNames[mode||gameMode]||''} Top 3</h3>`+
+    lb.map((e,i)=>`<div class="lb-row"><span class="lb-rank">${i+1}.</span><span>${e.initials}</span><span class="lb-score">${e.score}</span></div>`).join('');
+}
+
+// ═══════════════════════════════════════════
+// GAME SETUP
+// ═══════════════════════════════════════════
+let gameMode=1;
+const SURVIVAL_MODES=['2v2survival','siege'];
+function playerCount(){
+  if(gameMode==='2v2'||gameMode==='2v2survival')return 4;
+  if(gameMode==='siege')return 1;
+  return+gameMode;
+}
+function teamOf(pid){
+  if(gameMode==='2v2'||gameMode==='2v2survival')return pid<2?0:1;
+  return pid;
+}
+function teammates(pid){
+  if(gameMode==='2v2'||gameMode==='2v2survival')
+    return G.players.filter(p=>p.id!==pid&&teamOf(p.id)===teamOf(pid)).map(p=>p.id);
+  return[];
+}
+function isTeamGame(){return gameMode==='2v2'||gameMode==='2v2survival';}
+
+function startPos(mode,i){
+  if(mode==='2v2'||mode==='2v2survival'){
+    // Teams spawn as neighbors: T0=[P0,P1] near (0,0); T1=[P2,P3] near (0,0) too but offset
+    if(mode==='2v2survival')return[[0,0],[2,0],[0,24],[2,24]][i]; // neighbors, ~24 apart
+    // Regular 2v2: vs mode, ~25 tiles apart
+    return[[0,0],[2,0],[26,0],[28,0]][i];
+  }
+  if(mode===2)return[[0,0],[26,0]][i]; // ~25 tiles apart for vs
+  if(mode===3)return[[0,0],[26,0],[13,22]][i];
+  if(mode===4)return[[0,0],[26,0],[0,26],[26,26]][i];
+  return[0,0];
+}
+
+function startGame(mode){
+  gameMode=mode;
+  const msEl=document.getElementById('mode-screen');if(msEl)msEl.style.display='none';
+  gameSeed=Math.floor(Math.random()*0xFFFFFFF);
+  world={};_tid=0;
+  const n=playerCount();
+  const players=[];
+  for(let i=0;i<n;i++){
+    const[sr,sc2]=startPos(mode,i);
+    players.push({
+      id:i,name:'P'+(i+1),gold:10,workforce:0,
+      disasterAt:10+Math.floor(Math.random()*11),invasionCount:0,
+      predictMsg:'Use WF to predict disaster.',
+      log:[{msg:'Kingdom founded!',cls:'good'}],predLog:[],
+      alive:true,startR:sr,startC:sc2,castles:[[sr,sc2]],
+      tech:[1,1,1,1,1], // farming,houses,water,war,defence
+      researchTimer:0,
+    });
+    sc(sr,sc2,{type:T.START,hp:20,owner:i});
+  }
+  const siegePrep=mode==='siege'?20:0;
+  G={players,round:1,turn:0,activeAction:null,selected:null,selectedTroop:null,
+     gameOver:false,mode:gameMode,troops:[],
+     siegePhase:mode==='siege'?'prep':null, // 'prep' or 'siege'
+     siegePrepRoundsLeft:siegePrep,
+     siegeWave:0,siegeWaveTimer:0,
+  };
+  const owEl=document.getElementById('overlay-wrap');if(owEl)owEl.classList.remove('show');
+  const db=document.getElementById('disaster-banner');if(db)db.style.display='none';
+  const sb=document.getElementById('siege-banner');if(sb)sb.style.display='none';
+  const cv=document.getElementById('W');
+  cam={x:cv.width/2-TILE_PX*.5,y:cv.height/2-TILE_PX*.5,zoom:1};
+  centerOn(players[0].startR,players[0].startC);
+  showCamBanner('P1 — your turn!',PCOLORS[0][2]);
+  if(mode==='siege')showSiegeBanner(`Prepare! ${siegePrep} rounds until the siege begins.`);
+  render();renderMinimap();
+}
+
+function curPlayer(){return G.players[G.turn];}
+function canSee(pid,r,c){
+  if(playerCount()===1)return true;
+  const pids=isTeamGame()?[pid,...teammates(pid)]:[pid];
+  for(const id of pids){
+    for(const k in world){const t=world[k];if(t.owner===id){const p=pk(k);if(Math.abs(p.r-r)<=2&&Math.abs(p.c-c)<=2)return true;}}
+    for(const tr of G.troops){if(tr.owner===id&&Math.abs(tr.r-r)<=2&&Math.abs(tr.c-c)<=2)return true;}
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════
+// LOGGING / UI
+// ═══════════════════════════════════════════
+function addLog(msg,cls='',pid=null){const p=pid!==null?G.players[pid]:curPlayer();p.log.unshift({msg,cls});if(p.log.length>80)p.log.pop();}
+function addLogAll(msg,cls=''){G.players.forEach(p=>p.log.unshift({msg,cls}));}
+let _alertT=null;
+function flashAlert(msg,color='#E24B4A'){const el=document.getElementById('alert-flash');if(!el)return;el.textContent=msg;el.style.color=color;el.style.display='block';clearTimeout(_alertT);_alertT=setTimeout(()=>{if(el)el.style.display='none';},2200);}
+let _toastT=null;
+function showToast(msg){const el=document.getElementById('claim-toast');if(!el)return;el.textContent=msg;el.style.display='block';clearTimeout(_toastT);_toastT=setTimeout(()=>{if(el)el.style.display='none';},2500);}
+function showBanner(msg,color='#a03'){const b=document.getElementById('disaster-banner');if(!b)return;b.textContent=msg;b.style.color=color;b.style.display='block';setTimeout(()=>{if(b)b.style.display='none';},4000);}
+function showCamBanner(msg,color){const b=document.getElementById('cam-banner');if(!b)return;b.textContent=msg;b.style.borderBottomColor=color;b.style.color=color;b.style.display='block';setTimeout(()=>{if(b)b.style.display='none';},2500);}
+function showSiegeBanner(msg){const b=document.getElementById('siege-banner');if(!b)return;b.textContent=msg;b.style.display='block';}
+function hideCtxMenu(){const m=document.getElementById('ctx-menu');if(m)m.style.display='none';}
+
+// ═══════════════════════════════════════════
+// SCORE
+// ═══════════════════════════════════════════
+function calcScore(pid){
+  if(gameMode==='siege')return G.siegeWave||0;
+  if(gameMode==='2v2survival')return G.siegeWave||0;
+  const p=G.players[pid];
+  return G.round+Object.values(world).filter(t=>t.owner===pid).length+p.gold;
+}
+
+// ═══════════════════════════════════════════
+// LOSE / WIN
+// ═══════════════════════════════════════════
+function findStart(pid){for(const k in world){const t=world[k];if(t.type===T.START&&t.owner===pid){const{r,c}=pk(k);return{cell:t,r,c};}}return null;}
+function hasCrops(pid){for(const k in world){const t=world[k];if(t.owner===pid&&(t.type===T.CROP||t.type===T.MATURE))return true;}return false;}
+
+function checkPlayerLose(pid){
+  const p=G.players[pid];if(!p.alive)return;
+  const castlesAlive=p.castles.filter(([r,c])=>{const t=gc(r,c);return t&&t.type===T.START&&t.owner===pid;});
+  const wfProd=Object.values(world).filter(t=>t.owner===pid&&t.type===T.HOUSE).length;
+  const broke=p.gold<=0&&p.workforce<=0&&wfProd===0;
+  if(castlesAlive.length===0||broke)eliminatePlayer(pid);
+}
+
+function eliminatePlayer(pid){
+  const p=G.players[pid];if(!p.alive||G.gameOver)return;
+  p.alive=false;
+  addLogAll(`${p.name} eliminated!`,'bad');
+  flashAlert(`${p.name} ELIMINATED!`,'#E24B4A');
+  if(playerCount()===1||gameMode==='siege'||gameMode==='2v2survival'){
+    const score=calcScore(pid);
+    doGameOver(`Your kingdom has fallen. Score: ${score}`,score);return;
+  }
+  for(const k in world){const t=world[k];if(t.owner===pid){if(t.type===T.START){t.type=T.RUINS;t.owner=null;}else{t.owner=null;if([T.LAND,T.CROP,T.MATURE,T.HOUSE].includes(t.type))t.wild=true;}}}
+  G.troops=G.troops.filter(t=>t.owner!==pid);
+  const alivePlayers=G.players.filter(q=>q.alive);
+  if(gameMode==='2v2'){
+    if(G.players.filter(q=>teamOf(q.id)===teamOf(pid)&&q.alive).length===0){
+      const winTeam=1-teamOf(pid);
+      doGameOver(`Team ${winTeam===0?'Blue':'Red'} wins!`);return;
+    }
+    return;
+  }
+  if(alivePlayers.length===1)doGameOver(`${alivePlayers[0].name} wins the kingdom!`);
+}
+
+let _pendingGameOverMsg='';
+function doGameOver(msg,score=0){
+  G.gameOver=true;
+  _pendingGameOverMsg=msg;_pendingScore=score;_pendingMode=gameMode;
+  const ovTitle=document.getElementById('ov-title');if(ovTitle)ovTitle.textContent='Game Over';
+  const ovMsg=document.getElementById('ov-msg');if(ovMsg)ovMsg.textContent=msg;
+  renderLeaderboard(gameMode);
+  const iForm=document.getElementById('initials-form');
+  if(iForm)iForm.style.display=(SURVIVAL_MODES.includes(String(gameMode))||gameMode===1||gameMode==='siege')&&isTop3(gameMode,score)?'block':'none';
+  const ow=document.getElementById('overlay-wrap');if(ow)ow.classList.add('show');
+}
+
+// ═══════════════════════════════════════════
+// CONNECTIVITY
+// ═══════════════════════════════════════════
+function checkConnectivity(pid){
+  const castleKeys=Object.keys(world).filter(k=>world[k].type===T.START&&world[k].owner===pid);
+  if(!castleKeys.length)return;
+  const reachable=new Set(castleKeys);const queue=[...castleKeys];
+  while(queue.length){const k=queue.shift();const{r,c}=pk(k);for(const[rr,cc]of nbrs(r,c)){const nk=key(rr,cc);if(reachable.has(nk))continue;const t=world[nk];if(!t||t.owner!==pid||t.type===T.FIRE||t.type===T.RUINS||t.type===T.WALL)continue;reachable.add(nk);queue.push(nk);}}
+  let freed=0;for(const k in world){const t=world[k];if(t.owner===pid&&t.type!==T.START&&!reachable.has(k)){t.owner=null;t.wild=true;freed++;}}
+  if(freed>0)addLog(`${freed} tile(s) cut off!`,'warn',pid);
+}
+function checkEncirclement(){
+  for(const k in world){const t=world[k];if(t.owner===null)continue;const{r,c}=pk(k);const owners=nbrs(r,c).map(([rr,cc])=>{const n=gc(rr,cc);return n?n.owner:undefined;});if(owners.some(o=>o===undefined||o===null))continue;const first=owners[0];if(first!==null&&owners.every(o=>o===first)&&first!==t.owner){addLog(`${G.players[first].name} captured tile by encirclement!`,'warn',first);t.owner=first;}}
+}
+
+// ═══════════════════════════════════════════
+// FIRE
+// ═══════════════════════════════════════════
+function setOnFire(r,c,owner){sc(r,c,{type:T.FIRE,hp:0,owner,fireAge:0});}
+function processFire(pid){
+  const fx=pid!==null?techFx(pid):_defaultFx();
+  const fireRange=fx.waterFireRange;
+  for(const k in world){const t=world[k];if(t.type!==T.WATER)continue;const{r,c}=pk(k);for(let dr=-fireRange;dr<=fireRange;dr++)for(let dc=-fireRange;dc<=fireRange;dc++){if(Math.abs(dr)+Math.abs(dc)>fireRange)continue;const n=gc(r+dr,c+dc);if(n&&n.type===T.FIRE){n.type=T.RUINS;n.hp=0;addLogAll('Water extinguished fire.','good');}}}
+  const toIgnite=[];
+  for(const k in world){const t=world[k];
+    if(t.type===T.FIRE){
+      if(t.fireAge===undefined)t.fireAge=0;t.fireAge++;
+      if(t.fireAge>=2){t.type=T.RUINS;t.hp=0;t.fireAge=undefined;continue;}
+      const{r,c}=pk(k);nbrs(r,c).forEach(([rr,cc])=>{const n=gc(rr,cc)||lazyCell(rr,cc);if(n&&FLAMMABLE.includes(n.type)&&Math.random()<0.4)toIgnite.push([rr,cc]);});
+    }
+    if(FLAMMABLE.includes(t.type)){const{r,c}=pk(k);if(nbrs(r,c).some(([rr,cc])=>{const n=gc(rr,cc);return n&&n.type===T.FIRE;})){t.hp--;if(t.hp<=0)setOnFire(r,c,t.owner);}}
+  }
+  toIgnite.forEach(([r,c])=>{const t=gc(r,c)||lazyCell(r,c);if(t&&FLAMMABLE.includes(t.type))setOnFire(r,c,t.owner);});
+}
+
+// ═══════════════════════════════════════════
+// INVASION / SIEGE
+// ═══════════════════════════════════════════
+function triggerInvasionWave(pid){
+  const p=G.players[pid];
+  const lvlIdx=Math.min(p.invasionCount>>1,INV_WAVES.length-1);
+  p.invasionCount++;
+  const wave=INV_WAVES[lvlIdx];
+  showBanner('⚠ INVASION WAVE! (Lvl '+(lvlIdx+1)+')');
+  addLog(`Invasion wave ${lvlIdx+1}! ${wave.count} troops.`,'bad',pid);
+  const ownedKeys=Object.keys(world).filter(k=>world[k].owner===pid);
+  if(!ownedKeys.length)return;
+  const spawnFor=(targetPid)=>{
+    for(let i=0;i<wave.count;i++){
+      const base=pk(ownedKeys[Math.floor(Math.random()*ownedKeys.length)]);
+      const a=Math.random()*Math.PI*2,d=8+Math.floor(Math.random()*6);
+      G.troops.push(makeTroop(targetPid,Math.round(base.r+Math.sin(a)*d),Math.round(base.c+Math.cos(a)*d),'invader',{spd:wave.spd,dmg:wave.dmg,hp:wave.hp}));
+    }
+  };
+  spawnFor(pid);
+  if(playerCount()>1)G.players.filter(q=>q.alive&&q.id!==pid).forEach(q=>{addLog(`${p.name} invasion hits you!`,'bad',q.id);spawnFor(q.id);});
+}
+
+function spawnSiegeWave(){
+  const waveNum=G.siegeWave;
+  let soldiers=0,tanks=0;
+  if(waveNum<SIEGE_WAVES.length){[soldiers,tanks]=SIEGE_WAVES[waveNum];}
+  else{const extra=waveNum-SIEGE_WAVES.length;soldiers=2+extra*2;tanks=11+extra*3;}
+  G.siegeWave++;
+  addLog(`Siege wave ${G.siegeWave}: ${soldiers} soldiers, ${tanks} tanks!`,'bad');
+  showBanner(`⚔️ WAVE ${G.siegeWave}: ${soldiers}S + ${tanks}T`);
+  // Find outermost owned tile
+  let maxDist=0;
+  const pr=G.players[0].startR,pc2=G.players[0].startC;
+  for(const k in world){const t=world[k];if(t.owner===0){const{r,c}=pk(k);maxDist=Math.max(maxDist,Math.abs(r-pr)+Math.abs(c-pc2));}}
+  const spawnDist=maxDist+6;
+  const spawnUnit=(type)=>{
+    const a=Math.random()*Math.PI*2;
+    const r=Math.round(pr+Math.sin(a)*spawnDist),c=Math.round(pc2+Math.cos(a)*spawnDist);
+    if(type==='soldier')G.troops.push({id:_tid++,owner:-1,r,c,type:'invader',hp:2,spd:1,dmg:1,moved:false,targetPid:0});
+    else G.troops.push({id:_tid++,owner:-1,r,c,type:'invader',hp:6,spd:3,dmg:2,moved:false,targetPid:0,isTank:true});
+  };
+  for(let i=0;i<soldiers;i++)spawnUnit('soldier');
+  for(let i=0;i<tanks;i++)spawnUnit('tank');
+  const hsEl=document.getElementById('hud-score');if(hsEl)hsEl.textContent='Wave '+G.siegeWave;
+}
+
+function triggerDisaster(pid,forceName){
+  const opts=playerCount()>1?['invasion']:['heat','windstorm','invasion'];
+  const d=forceName||opts[Math.floor(Math.random()*opts.length)];
+  if(d==='invasion'){triggerInvasionWave(pid);return;}
+  showBanner('⚠ DISASTER: '+d.toUpperCase()+'!');
+  addLog('DISASTER: '+d+'!','bad',pid);
+  if(d==='heat'){let n=0;for(const k in world){const t=world[k];if(FLAMMABLE.includes(t.type)&&t.owner===pid&&Math.random()<0.25){const{r,c}=pk(k);setOnFire(r,c,pid);n++;}}addLog(`Heat ignited ${n} tiles.`,n>0?'bad':'warn',pid);}
+  else{let n=0;for(const k in world){const t=world[k];if(t.owner===pid&&!WIND_IMMUNE.includes(t.type)&&Math.random()<0.1){if([T.HOUSE,T.CROP,T.MATURE,T.BARRACKS,T.RESEARCH,T.CANNON].includes(t.type)){t.type=T.RUINS;t.hp=0;}else{const{r,c}=pk(k);dc(r,c);}n++;}}addLog(`Windstorm hit ${n} tiles.`,n>0?'bad':'warn',pid);}
+}
+
+// ═══════════════════════════════════════════
+// TROOP PROCESSING
+// ═══════════════════════════════════════════
+function processTroops(pid){
+  for(const tr of G.troops.filter(t=>t.owner===pid)){tr.moved=false;if(tr.hasActed!==undefined)tr.hasActed=false;}
+
+  // Invaders move & fight
+  const invaders=G.troops.filter(tr=>tr.type==='invader'&&tr.targetPid===pid);
+  for(const inv of invaders){
+    let bestDist=Infinity,bestR=inv.r,bestC=inv.c;
+    for(const k in world){const t=world[k];if(t.owner===pid){const p=pk(k);const d=Math.abs(p.r-inv.r)+Math.abs(p.c-inv.c);if(d<bestDist){bestDist=d;bestR=p.r;bestC=p.c;}}}
+    let steps=inv.spd,cr=inv.r,cc=inv.c;
+    while(steps-->0){const dr=bestR-cr,dc=bestC-cc;if(!dr&&!dc)break;if(Math.abs(dr)>=Math.abs(dc)){cr+=dr>0?1:-1;}else{cc+=dc>0?1:-1;}}
+    inv.r=cr;inv.c=cc;
+    // Wall blocks ground invaders
+    const wallHere=gc(cr,cc);
+    if(wallHere&&wallHere.type===T.WALL&&wallHere.owner===pid){
+      const fx=techFx(pid);
+      const dmgReduced=Math.max(1,inv.dmg-fx.wallDmgReduction);
+      wallHere.hp-=dmgReduced;inv.hp-=dmgReduced;
+      if(wallHere.hp<=0){wallHere.type=T.RUINS;wallHere.hp=0;addLog('Wall destroyed by invader!','bad',pid);}
+      continue;
+    }
+    const defenders=G.troops.filter(t=>t.owner===pid&&t.r===cr&&t.c===cc);
+    if(defenders.length>0){for(const def of defenders){if(inv.hp<=0)break;inv.hp-=troopDmgOf(def);def.hp-=inv.dmg;}if(inv.hp<=0){addLog('Defenders repelled an invader!','good',pid);}}
+    else{const tile=gc(cr,cc);if(tile&&tile.owner===pid){tile.hp-=inv.dmg;if(tile.hp<=0){if(tile.type===T.START){tile.hp=0;flashAlert('BASE WAS DAMAGED',PCOLORS[pid][2]);addLog('Castle hit by invader!','bad',pid);}else if([T.HOUSE,T.CROP,T.MATURE,T.BARRACKS,T.RESEARCH,T.RESCENTER].includes(tile.type)){tile.type=T.RUINS;tile.hp=0;}else{const{r,c}=pk(key(cr,cc));dc(r,c);}addLog('Invader destroyed a tile!','bad',pid);}}}
+  }
+  G.troops=G.troops.filter(tr=>tr.hp>0);
+
+  // Ranged troops (snipers, mechs, tanks with range) fire at enemies within range
+  for(const tr of G.troops.filter(t=>t.owner===pid)){
+    const range=troopRangeOf(tr);
+    if(!range)continue;
+    const fx=techFx(pid);
+    let targets=tr.type==='tank'?fx.tankTargets:1;
+    const enemies=G.troops.filter(et=>et.owner!==pid&&!teammates(pid).includes(et.owner)&&Math.abs(et.r-tr.r)+Math.abs(et.c-tr.c)<=range);
+    const invHere=enemies.filter(e=>e.type==='invader');
+    const enemyAll=[...invHere,...enemies.filter(e=>e.type!=='invader')];
+    for(let i=0;i<targets&&i<enemyAll.length;i++){
+      const dmg=troopDmgOf(tr);
+      if(tr.type==='tank'&&fx.tankAoe){
+        enemyAll.forEach(e=>{if(Math.abs(e.r-enemyAll[i].r)+Math.abs(e.c-enemyAll[i].c)<=1)e.hp-=dmg;});
+      } else enemyAll[i].hp-=dmg;
+    }
+  }
+  G.troops=G.troops.filter(tr=>tr.hp>0);
+
+  // Cannons
+  for(const k in world){
+    const t=world[k];if(t.type!==T.CANNON||t.owner!==pid)continue;
+    const fx=techFx(pid);
+    const range=fx.cannonRange+fx.cannonDefRangeBonus,dmg=1+fx.cannonDmgBonus+fx.cannonDefDmgBonus;
+    const{r,c}=pk(k);
+    let bestD=Infinity,bestK=null;
+    for(const ek in world){const et=world[ek];if(et.owner!==null&&et.owner!==pid&&!teammates(pid).includes(et.owner)){const ep=pk(ek);const d=Math.abs(ep.r-r)+Math.abs(ep.c-c);if(d<=range&&d<bestD){bestD=d;bestK=ek;}}}
+    if(bestK){const et=world[bestK];et.hp-=dmg;if(et.hp<=0){if(et.type===T.START)handleCastleFall(pk(bestK).r,pk(bestK).c,et.owner,pid);else{et.type=T.RUINS;et.hp=0;}addLog('Cannon destroyed enemy tile!','good',pid);}else addLog(`Cannon hit (-${dmg} HP).`,'good',pid);}
+    const nearInv=G.troops.filter(tr=>(tr.type==='invader')&&tr.targetPid===pid&&Math.abs(tr.r-r)+Math.abs(tr.c-c)<=range);
+    if(nearInv.length){nearInv[0].hp-=dmg;addLog('Cannon hit invader!','good',pid);}
+  }
+  G.troops=G.troops.filter(tr=>tr.hp>0);
+
+  // Melee player troops on enemy tiles
+  for(const tr of G.troops.filter(t=>t.owner===pid)){
+    if(troopRangeOf(tr)>0)continue; // ranged already fired
+    const tile=gc(tr.r,tr.c);
+    if(!tile||tile.owner===null||tile.owner===pid||teammates(pid).includes(tile.owner))continue;
+    // Wall blocks enemy ground troops
+    if(tile.type===T.WALL)continue;
+    const dmg=troopDmgOf(tr);
+    const enemyTroopsHere=G.troops.filter(et=>et.r===tr.r&&et.c===tr.c&&et.owner!==pid&&!teammates(pid).includes(et.owner)&&et.type!=='invader');
+    if(enemyTroopsHere.length>0){for(const et of enemyTroopsHere){if(tr.hp<=0)break;et.hp-=dmg;tr.hp-=troopDmgOf(et);}}
+    else{tile.hp-=dmg;if(tile.hp<=0){if(tile.type===T.MATURE)earnGold(pid,1);if(tile.type===T.START){handleCastleFall(tr.r,tr.c,tile.owner,pid);}else{tile.type=T.RUINS;tile.owner=pid;tile.hp=0;}addLog(`Troop captured tile!`,'good',pid);}}
+  }
+  G.troops=G.troops.filter(tr=>tr.hp>0);
+  checkConnectivity(pid);checkEncirclement();
+}
+
+// ═══════════════════════════════════════════
+// GOLD HELPERS
+// ═══════════════════════════════════════════
+function goldOf(pid){if(isTeamGame()){const tm=teamOf(pid);return G.players.filter(p=>teamOf(p.id)===tm).reduce((s,p)=>s+p.gold,0);}return G.players[pid].gold;}
+function spendGold(pid,amt){if(isTeamGame()){let rem=amt;for(const tid of[pid,...teammates(pid)]){const p=G.players[tid];const take=Math.min(p.gold,rem);p.gold-=take;rem-=take;if(rem<=0)break;}}else G.players[pid].gold-=amt;}
+function earnGold(pid,amt){G.players[pid].gold+=amt;}
+function wfOf(pid){if(isTeamGame()){const tm=teamOf(pid);return G.players.filter(p=>teamOf(p.id)===tm).reduce((s,p)=>s+p.workforce,0);}return G.players[pid].workforce;}
+function spendWF(pid,amt){if(isTeamGame()){let rem=amt;for(const tid of[pid,...teammates(pid)]){const p=G.players[tid];const take=Math.min(p.workforce,rem);p.workforce-=take;rem-=take;if(rem<=0)break;}}else G.players[pid].workforce-=amt;}
+
+// ═══════════════════════════════════════════
+// CASTLE FALL
+// ═══════════════════════════════════════════
+function handleCastleFall(r,c,fallenPid,attackerPid){
+  const t=gc(r,c);if(!t)return;
+  const fp=G.players[fallenPid];
+  fp.castles=fp.castles.filter(([cr,cc])=>!(cr===r&&cc===c));
+  const remaining=fp.castles.filter(([cr,cc])=>{const ct=gc(cr,cc);return ct&&ct.type===T.START&&ct.owner===fallenPid;});
+  if(remaining.length>0){t.type=T.RUINS;t.owner=null;addLog(`${fp.name} lost a castle! ${remaining.length} remain.`,'bad',attackerPid);flashAlert(`${fp.name} CASTLE FELL`,'#E24B4A');}
+  else{addLog(`${fp.name}'s last castle fallen!`,'bad',attackerPid);flashAlert(`${fp.name} DEFEATED!`,'#E24B4A');for(const k in world){const wt=world[k];if(wt.owner===fallenPid){if(wt.type===T.START){wt.hp=20;wt.owner=attackerPid;G.players[attackerPid].castles.push([pk(k).r,pk(k).c]);}else wt.owner=attackerPid;}}t.type=T.START;t.hp=20;t.owner=attackerPid;G.players[attackerPid].castles.push([r,c]);eliminatePlayer(fallenPid);}
+}
+
+// ═══════════════════════════════════════════
+// END TURN
+// ═══════════════════════════════════════════
+function endTurn(){
+  if(G.gameOver)return;
+  G.activeAction=null;G.selected=null;G.selectedTroop=null;hideCtxMenu();
+  const pid=G.turn,p=G.players[pid];
+  const fx=techFx(pid);
+
+  // Siege prep countdown
+  if(G.siegePhase==='prep'&&G.turn===0){
+    G.siegePrepRoundsLeft--;
+    if(G.siegePrepRoundsLeft<=0){G.siegePhase='siege';showSiegeBanner('⚔️ THE SIEGE BEGINS!');addLog('The siege has begun! Waves every 2 rounds.','bad');}
+    else showSiegeBanner(`Prepare! ${G.siegePrepRoundsLeft} rounds until siege.`);
+  }
+  // Siege wave every 2 rounds
+  if(G.siegePhase==='siege'&&G.turn===0&&G.round>1&&G.round%2===0)spawnSiegeWave();
+
+  // Workforce from houses
+  let wf=0;for(const k in world){const t=world[k];if(t.type===T.HOUSE&&t.owner===pid)wf+=1+fx.houseWfBonus;}
+  if(wf>0){p.workforce+=wf;addLog(`+${wf} WF.`,'good');}
+
+  // Crop maturation
+  let matured=0;
+  for(const k in world){const t=world[k];if(t.type!==T.CROP||t.owner!==pid)continue;const{r,c}=pk(k);const nw=checkNearWater(r,c,fx.waterCropRange);if(Math.random()<(nw?0.33+fx.cropChanceBonus+fx.cropNearWaterBonus:0.33+fx.cropChanceBonus)){t.type=T.MATURE;matured++;}}
+  if(matured>0)addLog(`${matured} crop(s) matured.`,'good');
+  for(const k in world){const t=world[k];if(t.type===T.WILD&&!t.owner&&Math.random()<0.15)t.type=T.WILD_MATURE;}
+
+  processFire(pid);processTroops(pid);
+
+  // Research stations
+  let rs=Object.values(world).filter(t=>t.type===T.RESEARCH&&t.owner===pid).length;
+  if(rs>0){p.researchTimer+=rs;while(p.researchTimer>=2){p.researchTimer-=2;const ti=Math.floor(Math.random()*TECH_NAMES.length);p.tech[ti]++;addLog(`🔬 ${TECH_NAMES[ti]} → level ${p.tech[ti]}!`,'good');}}
+
+  // Wild spawn
+  if(Math.random()<0.35){const owned=Object.keys(world).filter(k=>world[k].owner===pid);if(owned.length){const base=pk(owned[Math.floor(Math.random()*owned.length)]);const cr=base.r+(Math.random()<.5?-1:1)*(5+Math.floor(Math.random()*12));const cc=base.c+(Math.random()<.5?-1:1)*(5+Math.floor(Math.random()*12));let placed=0;for(let dr=-2;dr<=2&&placed<4;dr++)for(let dc=-2;dc<=2&&placed<4;dc++){const r=cr+dr,c=cc+dc;if(!gc(r,c)&&!isWildAt(r,c)&&Math.random()<.5){sc(r,c,{type:Math.random()<.3?T.WILD_MATURE:T.WILD,hp:2,owner:null,wild:true});placed++;}}if(placed>0)addLog('Wild field appeared!','warn');}}
+
+  // Disaster
+  if(G.round===p.disasterAt&&G.siegePhase!=='siege'){triggerDisaster(pid);p.disasterAt=G.round+10+Math.floor(Math.random()*11);p.predictMsg='Use WF to predict.';}
+
+  checkConnectivity(pid);checkEncirclement();checkPlayerLose(pid);
+
+  // Advance turn
+  let next=(pid+1)%playerCount();let tries=0;
+  while(!G.players[next].alive&&tries<playerCount()){next=(next+1)%playerCount();tries++;}
+  if(tries>=playerCount()){doGameOver('All eliminated?');return;}
+  if(next<=pid)G.round++;
+  G.turn=next;
+  const np=G.players[next];
+  showCamBanner(`${np.name} — your turn!`,PCOLORS[next][2]);
+  centerOn(np.startR,np.startC);
+  render();renderMinimap();
+}
+
+function checkNearWater(r,c,range){
+  for(let dr=-range;dr<=range;dr++)for(let dc=-range;dc<=range;dc++){if(Math.abs(dr)+Math.abs(dc)>range)continue;const n=gc(r+dr,c+dc);if(n&&n.type===T.WATER)return true;}return false;
+}
+
+// ═══════════════════════════════════════════
+// BULK ACTIONS
+// ═══════════════════════════════════════════
+function doBulkAction(action){
+  const pid=G.turn;const fx=techFx(pid);
+  const vOwners=isTeamGame()?[pid,...teammates(pid)]:[pid];
+  if(action==='harvest-all-gold'){
+    let count=0;const val=3+fx.matureCropBonus;
+    for(const k in world){const mt=world[k];if(mt.type===T.MATURE&&vOwners.includes(mt.owner)&&goldOf(pid)>=1){spendGold(pid,1);earnGold(pid,val);mt.type=T.LAND;mt.hp=1;count++;}}
+    if(count)addLog(`Harvested ${count} crops.`,'good');else flashAndLog('Nothing to harvest.','bad','NOTHING TO HARVEST');
+  } else if(action==='harvest-all-wf'){
+    let count=0;const val=3+fx.matureCropBonus;
+    for(const k in world){const mt=world[k];if(mt.type===T.MATURE&&vOwners.includes(mt.owner)&&wfOf(pid)>=1){spendWF(pid,1);earnGold(pid,val);mt.type=T.LAND;mt.hp=1;count++;}}
+    if(count)addLog(`Harvested ${count} crops (WF).`,'good');else flashAndLog('Nothing to harvest.','bad','NOTHING TO HARVEST');
+  } else if(action==='plant-all'){
+    let count=0;for(const k in world){const lt=world[k];if(lt.type===T.LAND&&lt.owner===pid&&goldOf(pid)>=1){spendGold(pid,1);lt.type=T.CROP;lt.hp=2;count++;}}
+    if(count)addLog(`Planted ${count} crops.`,'good');else flashAndLog('Nothing to plant.','bad','NOTHING TO PLANT');
+  }
+  render();renderMinimap();
+}
+
+// ═══════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════
+function flashAndLog(msg,cls,flash){addLog(msg,cls);flashAlert(flash||msg.toUpperCase(),'#E24B4A');}
+
+function doAction(action,r,c){
+  const pid=G.turn;const t=gc(r,c);
+  const gold=goldOf(pid),wf=wfOf(pid);const fx=techFx(pid);
+
+  if(action==='buy-land'){
+    if(t&&!(t.wild&&t.owner===null)){if(t.type===T.FIRE||t.type===T.RUINS)return flashAndLog('Cannot build on fire/ruins.','bad','CANNOT BUILD HERE');return flashAndLog('Occupied.','bad','OCCUPIED');}
+    const adjOk=adjOwned(r,c,pid)||(isTeamGame()&&teammates(pid).some(tid=>adjOwned(r,c,tid)));
+    if(!adjOk)return flashAndLog('Not adjacent to territory.','bad','TOO FAR');
+    if(gold<1)return flashAndLog('Need $1.','bad','CANNOT AFFORD');
+    spendGold(pid,1);sc(r,c,{type:T.LAND,hp:1,owner:pid});addLog('Land purchased.','good');G.activeAction=null;
+  } else if(action==='claim-wild'){
+    const wt=t||lazyCell(r,c);
+    if(!wt||wt.owner!==null||(wt.type!==T.WILD&&wt.type!==T.WILD_MATURE&&!wt.wild))return flashAndLog('Select unclaimed wild.','bad','INVALID');
+    const adjOk=adjOwned(r,c,pid)||(isTeamGame()&&teammates(pid).some(tid=>adjOwned(r,c,tid)));
+    if(!adjOk)return flashAndLog('Must be adjacent.','bad','TOO FAR');
+    wt.owner=pid;wt.wild=false;
+    if(wt.type===T.WILD_MATURE)wt.type=T.MATURE;else if(wt.type===T.WILD)wt.type=T.CROP;
+    sc(r,c,wt);addLog('Tile claimed!','good');showToast('Tile claimed! ✅');
+  } else if(action==='plant-crop'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<1)return flashAndLog('Need $1.','bad','CANNOT AFFORD');
+    spendGold(pid,1);t.type=T.CROP;t.hp=2;addLog('Crop planted.','good');
+  } else if(action==='build-house'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    const cost=Math.max(1,2-fx.housePriceDiscount);if(gold<cost)return flashAndLog(`Need $${cost}.`,'bad','CANNOT AFFORD');
+    spendGold(pid,cost);t.type=T.HOUSE;t.hp=3+fx.houseHpBonus;addLog(`House built.`,'good');
+  } else if(action==='add-water'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    const cost=Math.max(1,5-fx.waterPriceDiscount);if(gold<cost)return flashAndLog(`Need $${cost}.`,'bad','CANNOT AFFORD');
+    spendGold(pid,cost);t.type=T.WATER;t.hp=99;addLog('Water placed.','good');
+  } else if(action==='build-research'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<3)return flashAndLog('Need $3.','bad','CANNOT AFFORD');
+    spendGold(pid,3);sc(r,c,{type:T.RESEARCH,hp:5,owner:pid});addLog('Research station built.','good');
+  } else if(action==='build-rescenter'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<15)return flashAndLog('Need $15.','bad','CANNOT AFFORD');
+    spendGold(pid,15);sc(r,c,{type:T.RESCENTER,hp:10,owner:pid});addLog('Research Center built. Click to buy upgrades directly.','good');
+  } else if(action==='build-barracks'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    const cost=Math.max(5,10-fx.barracksCostDiscount);if(gold<cost)return flashAndLog(`Need $${cost}.`,'bad','CANNOT AFFORD');
+    spendGold(pid,cost);sc(r,c,{type:T.BARRACKS,hp:BARRACKS_BASE_HP,owner:pid,barracksLevel:1});addLog('Barracks built.','good');
+  } else if(action==='upgrade-barracks'){
+    if(!t||t.type!==T.BARRACKS||t.owner!==pid)return flashAndLog('Select your barracks.','bad','INVALID');
+    if((t.barracksLevel||1)>=4)return flashAndLog('Max level.','bad','MAX LEVEL');
+    const cost=Math.max(5,BARRACKS_UPG_COST-fx.barracksUgpCostDiscount);if(gold<cost)return flashAndLog(`Need $${cost}.`,'bad','CANNOT AFFORD');
+    spendGold(pid,cost);t.barracksLevel=(t.barracksLevel||1)+1;t.hp=BARRACKS_BASE_HP*Math.pow(2,t.barracksLevel-1);addLog(`Barracks → level ${t.barracksLevel}.`,'good');
+  } else if(action==='build-techlab'){
+    if(!fx.hasTank)return flashAndLog('Need War lvl 7.','bad','LOCKED');
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<20)return flashAndLog('Need $20.','bad','CANNOT AFFORD');
+    spendGold(pid,20);sc(r,c,{type:T.TECHLAB,hp:15,owner:pid});addLog('Tech lab built.','good');
+  } else if(action==='build-cannon'){
+    if(!fx.hasCannon)return flashAndLog('Need War lvl 15.','bad','LOCKED');
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<4)return flashAndLog('Need $4.','bad','CANNOT AFFORD');
+    spendGold(pid,4);sc(r,c,{type:T.CANNON,hp:5+fx.cannonHpBonus+fx.cannonDefHpBonus,owner:pid});addLog('Cannon built.','good');
+  } else if(action==='build-airport'){
+    if(!fx.hasAirport)return flashAndLog('Need War lvl 19.','bad','LOCKED');
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<25)return flashAndLog('Need $25.','bad','CANNOT AFFORD');
+    spendGold(pid,25);sc(r,c,{type:T.AIRPORT,hp:20,owner:pid});addLog('Airport built.','good');
+  } else if(action==='build-wall'){
+    if(!fx.hasWall)return flashAndLog('Need Defence lvl 1.','bad','LOCKED');
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<7)return flashAndLog('Need $7.','bad','CANNOT AFFORD');
+    spendGold(pid,7);sc(r,c,{type:T.WALL,hp:10+fx.wallHpBonus,owner:pid});addLog('Wall built.','good');
+  } else if(action==='repair-wall'){
+    if(!t||t.type!==T.WALL||t.owner!==pid)return flashAndLog('Select your wall.','bad','INVALID');
+    const wallMaxHp=10+fx.wallHpBonus;if(t.hp>=wallMaxHp)return flashAndLog('Wall at full HP.','bad','FULL HP');
+    const missing=wallMaxHp-t.hp;if(gold<missing)return flashAndLog(`Need $${missing} to fully repair.`,'bad','CANNOT AFFORD');
+    spendGold(pid,missing);t.hp=wallMaxHp;addLog('Wall repaired.','good');
+  } else if(action==='build-castle'){
+    if(!t||t.type!==T.LAND||t.owner!==pid)return flashAndLog('Need owned Land.','bad','INVALID');
+    if(gold<100)return flashAndLog('Need $100.','bad','CANNOT AFFORD');
+    spendGold(pid,100);sc(r,c,{type:T.START,hp:20,owner:pid});G.players[pid].castles.push([r,c]);addLog('New castle built!','good');showToast('Castle built! 🏰');
+  } else if(action==='harvest-gold'){
+    const vOwners=isTeamGame()?[pid,...teammates(pid)]:[pid];
+    if(!t||t.type!==T.MATURE||!vOwners.includes(t.owner))return flashAndLog('Need mature crop.','bad','INVALID');
+    if(gold<1)return flashAndLog('Need $1.','bad','CANNOT AFFORD');
+    const val=3+fx.matureCropBonus;spendGold(pid,1);earnGold(pid,val);t.type=T.LAND;t.hp=1;addLog(`Harvested (net +$${val-1}).`,'good');
+  } else if(action==='harvest-wf'){
+    const vOwners=isTeamGame()?[pid,...teammates(pid)]:[pid];
+    if(!t||t.type!==T.MATURE||!vOwners.includes(t.owner))return flashAndLog('Need mature crop.','bad','INVALID');
+    if(wf<1)return flashAndLog('Need 1 WF.','bad','NO WORKFORCE');
+    const val=3+fx.matureCropBonus;spendWF(pid,1);earnGold(pid,val);t.type=T.LAND;t.hp=1;addLog(`Harvested via WF (+$${val}).`,'good');
+  } else if(action==='repair-start'){
+    if(!t||t.type!==T.START||t.owner!==pid)return flashAndLog('Select your Castle.','bad','INVALID');
+    if(t.hp>=20)return flashAndLog('Full HP.','bad','FULL HP');if(gold<5)return flashAndLog('Need $5.','bad','CANNOT AFFORD');
+    spendGold(pid,5);t.hp=Math.min(20,t.hp+1);addLog('Castle repaired.','good');
+  } else if(action==='clear-ruins'){
+    if(!t||t.type!==T.RUINS||t.owner!==pid)return flashAndLog('Need owned Ruins.','bad','INVALID');
+    if(gold<1)return flashAndLog('Need $1.','bad','CANNOT AFFORD');
+    spendGold(pid,1);t.type=T.LAND;t.hp=1;addLog('Ruins cleared.','good');
+  } else if(action==='sell'){
+    if(!t||t.owner!==pid)return flashAndLog('Must own tile.','bad','INVALID');
+    if(t.type===T.LAND){earnGold(pid,1);dc(r,c);addLog('Land sold ($1).','good');}
+    else if(t.type===T.HOUSE){const minHp=fx.houseMinHpSell;if(t.hp<minHp)return flashAndLog(`Needs ${minHp}+ HP.`,'bad','TOO DAMAGED');const cost=Math.max(1,2-fx.housePriceDiscount);earnGold(pid,cost);t.type=T.LAND;t.hp=1;addLog(`House sold.`,'good');}
+    else if(t.type===T.WATER){earnGold(pid,Math.max(1,5-fx.waterPriceDiscount));t.type=T.LAND;t.hp=1;addLog('Water sold.','good');}
+    else return flashAndLog('Cannot sell this.','bad','INVALID');
+  } else if(action==='attack'){
+    if(!t)return flashAndLog('Nothing to attack.','bad','INVALID');
+    if(t.owner===pid||(isTeamGame()&&teammates(pid).includes(t.owner)))return flashAndLog("Can't attack own tile.",'bad','FRIENDLY FIRE');
+    if(![T.LAND,T.CROP,T.MATURE,T.HOUSE,T.BARRACKS,T.RUINS,T.RESEARCH,T.RESCENTER,T.CANNON,T.WALL,T.START].includes(t.type))return flashAndLog('Cannot attack this.','bad','INVALID');
+    if(wf<1)return flashAndLog('Need WF.','bad','NO WORKFORCE');
+    const dmg=Math.min(wf,t.hp||1);spendWF(pid,dmg);t.hp-=dmg;
+    if(t.hp<=0){if(t.type===T.MATURE)earnGold(pid,1);if(t.type===T.START)handleCastleFall(r,c,t.owner,pid);else{t.type=T.RUINS;t.owner=pid;t.hp=0;}addLog('Enemy tile captured.','good');}
+    else addLog(`Hit (-${dmg} HP, ${t.hp} left).`,'warn');
+    checkConnectivity(t.owner!==null?t.owner:pid);checkEncirclement();if(t.owner!==null&&t.owner!==pid)checkPlayerLose(t.owner);
+  } else if(action==='recruit-soldier'){
+    if(!t||t.type!==T.BARRACKS||t.owner!==pid)return flashAndLog('Select your barracks.','bad','INVALID');
+    if(wf<1)return flashAndLog('Need 1 WF.','bad','NO WORKFORCE');
+    spendWF(pid,1);G.troops.push(makeTroop(pid,r,c,'soldier',0));addLog('Soldier recruited.','good');
+  } else if(action==='recruit-sniper'){
+    if(!fx.hasSniper)return flashAndLog('Need War lvl 36.','bad','LOCKED');
+    const hasBrks=Object.values(world).some(t=>t.type===T.BARRACKS&&t.owner===pid);
+    if(!hasBrks)return flashAndLog('Need a barracks.','bad','NEED BARRACKS');
+    if(wf<3)return flashAndLog('Need 3 WF.','bad','NO WORKFORCE');if(gold<2)return flashAndLog('Need $2.','bad','CANNOT AFFORD');
+    spendWF(pid,3);spendGold(pid,2);
+    const sn=makeTroop(pid,r,c,'sniper');sn.hp+=fx.sniperHpBonus;
+    G.troops.push(sn);addLog('Sniper deployed.','good');
+  } else if(action==='recruit-tank'){
+    if(!fx.hasTank)return flashAndLog('Need War lvl 7 + Tech Lab.','bad','LOCKED');
+    if(!Object.values(world).some(t=>t.type===T.TECHLAB&&t.owner===pid))return flashAndLog('Need a Tech Lab.','bad','NEED TECH LAB');
+    const cost=Math.max(1,7-fx.tankCostDiscount);if(gold<cost)return flashAndLog(`Need $${cost}.`,'bad','CANNOT AFFORD');
+    if(wf<3)return flashAndLog('Need 3 WF.','bad','NO WORKFORCE');
+    spendGold(pid,cost);spendWF(pid,3);const tank=makeTroop(pid,r,c,'tank');tank.hp+=fx.tankHpBonus;G.troops.push(tank);addLog('Tank deployed.','good');
+  } else if(action==='recruit-mech'){
+    if(!fx.hasMech)return flashAndLog('Need War lvl 34 + Tech Lab.','bad','LOCKED');
+    if(!Object.values(world).some(t=>t.type===T.TECHLAB&&t.owner===pid))return flashAndLog('Need a Tech Lab.','bad','NEED TECH LAB');
+    const mechWfCost=Math.max(10,40-fx.mechWfDiscount);
+    const mechGold=Math.max(10,40-fx.mechGoldDiscount);
+    const mechSoldiers=Math.max(5,40-fx.mechSoldierDiscount);
+    const mySoldiers=G.troops.filter(t=>t.owner===pid&&t.type==='soldier').length;
+    if(wf<mechWfCost)return flashAndLog(`Need ${mechWfCost} WF.`,'bad','NO WORKFORCE');
+    if(gold<mechGold)return flashAndLog(`Need $${mechGold}.`,'bad','CANNOT AFFORD');
+    if(mySoldiers<mechSoldiers)return flashAndLog(`Need ${mechSoldiers} soldiers.`,'bad','NOT ENOUGH SOLDIERS');
+    spendWF(pid,mechWfCost);spendGold(pid,mechGold);
+    // Consume soldiers
+    let consumed=0;G.troops=G.troops.filter(t=>{if(t.owner===pid&&t.type==='soldier'&&consumed<mechSoldiers){consumed++;return false;}return true;});
+    G.troops.push(makeTroop(pid,r,c,'mech'));addLog('Mech deployed!','good');
+  } else if(action==='recruit-bomber'){
+    if(!fx.hasAirport)return flashAndLog('Need War lvl 19 + Airport.','bad','LOCKED');
+    if(!t||t.type!==T.AIRPORT||t.owner!==pid)return flashAndLog('Select your airport.','bad','INVALID');
+    if(gold<11)return flashAndLog('Need $11.','bad','CANNOT AFFORD');if(wf<6)return flashAndLog('Need 6 WF.','bad','NO WORKFORCE');
+    spendGold(pid,11);spendWF(pid,6);G.troops.push(makeTroop(pid,r,c,'bomber'));addLog('Bomber launched.','good');
+  } else if(action==='recruit-carrier'){
+    if(!fx.hasCarrier)return flashAndLog('Need War lvl 20 + Airport.','bad','LOCKED');
+    if(!t||t.type!==T.AIRPORT||t.owner!==pid)return flashAndLog('Select your airport.','bad','INVALID');
+    const cost=Math.max(10,30-fx.carrierCostDiscount);
+    if(gold<cost)return flashAndLog(`Need $${cost}.`,'bad','CANNOT AFFORD');if(wf<12)return flashAndLog('Need 12 WF.','bad','NO WORKFORCE');
+    spendGold(pid,cost);spendWF(pid,12);
+    const carrier=makeTroop(pid,r,c,'carrier');carrier.hp=30+fx.carrierHpBonus;carrier.maxHp=carrier.hp;
+    G.troops.push(carrier);addLog('Carrier launched.','good');
+  } else if(action==='upgrade-troop'){
+    const tr=G.selectedTroop!==null?G.troops.find(t=>t.id===G.selectedTroop):troopAt(r,c);
+    if(!tr||tr.owner!==pid||tr.type!=='soldier')return flashAndLog('Select a soldier.','bad','INVALID');
+    const newRank=tr.rank+1;if(newRank>=SOLDIER_RANKS.length)return flashAndLog('Max rank.','bad','MAX RANK');
+    const[,,,wfCost,reqLvl]=SOLDIER_RANKS[newRank];
+    const bestBLvl=Math.max(0,...Object.values(world).filter(t=>t.type===T.BARRACKS&&t.owner===pid).map(t=>t.barracksLevel||1));
+    if(bestBLvl<reqLvl)return flashAndLog(`Need barracks lvl ${reqLvl}.`,'bad','BARRACKS TOO LOW');
+    if(wf<wfCost)return flashAndLog(`Need ${wfCost} WF.`,'bad','NO WORKFORCE');
+    spendWF(pid,wfCost);tr.rank=newRank;addLog(`Soldier → rank ${newRank+1}.`,'good');
+  } else if(action==='move-troop'){
+    const tr=G.troops.find(t=>t.id===G.selectedTroop);
+    if(!tr||tr.owner!==pid)return flashAndLog('No troop selected.','bad','INVALID');
+    if(tr.moved)return flashAndLog('Already moved.','bad','ALREADY MOVED');
+    const dist=Math.abs(tr.r-r)+Math.abs(tr.c-c);
+    if(dist>troopSpdOf(tr))return flashAndLog(`Range: ${troopSpdOf(tr)} tiles.`,'bad','TOO FAR');
+    // Wall blocks enemy ground movement (not own)
+    const destTile=gc(r,c);if(destTile&&destTile.type===T.WALL&&destTile.owner!==pid&&!teammates(pid).includes(destTile.owner)){const fx2=techFx(destTile.owner);if(tr.type==='bomber'&&fx2.wallBlocksBombers)return flashAndLog('Wall blocks bombers.','bad','BLOCKED BY WALL');if(tr.type==='carrier'&&fx2.wallBlocksCarriers)return flashAndLog('Wall blocks carriers.','bad','BLOCKED BY WALL');}
+    tr.r=r;tr.c=c;tr.moved=true;addLog(`Troop → (${r},${c}).`,'good');G.selectedTroop=null;
+  } else if(action==='carrier-load'){
+    const carrier=G.troops.find(t=>t.id===G.selectedTroop&&t.type==='carrier'&&t.owner===pid);
+    if(!carrier)return flashAndLog('Select your carrier first.','bad','INVALID');
+    const target=G._cargoTarget!==undefined?G.troops.find(t=>t.id===G._cargoTarget):troopAt(r,c);
+    if(!target||target.owner!==pid||target.id===carrier.id)return flashAndLog('No friendly troop here.','bad','INVALID');
+    const fxC=techFx(pid);const maxSupply=fxC.carrierExpandedCargo?10:5;
+    const sc3={soldier:1,tank:2.5,bomber:3.5}[target.type]||1;
+    const used=carrier.cargo.reduce((s,ct)=>s+({soldier:1,tank:2.5,bomber:3.5}[ct.type]||1),0);
+    if(used+sc3>maxSupply)return flashAndLog('Carrier full.','bad','CARRIER FULL');
+    carrier.cargo.push({id:target.id,type:target.type,rank:target.rank||0,hp:target.hp});
+    G.troops=G.troops.filter(t=>t.id!==target.id);G._cargoTarget=undefined;
+    addLog(`${target.type} loaded onto carrier.`,'good');
+  } else if(action==='carrier-unload'){
+    const carrier=G.troops.find(t=>t.id===G.selectedTroop&&t.type==='carrier'&&t.owner===pid)||G.troops.find(t=>t.type==='carrier'&&t.owner===pid&&t.r===r&&t.c===c);
+    if(!carrier||!carrier.cargo.length)return flashAndLog('No carrier with cargo.','bad','INVALID');
+    let placed=0;
+    for(const item of carrier.cargo){const positions=[[carrier.r,carrier.c],...nbrs(carrier.r,carrier.c)];const pos=positions.find(([pr,pc])=>!troopAt(pr,pc));if(pos){const nt=makeTroop(pid,pos[0],pos[1],item.type,item.rank||0);nt.hp=item.hp;nt.moved=true;G.troops.push(nt);placed++;}}
+    carrier.cargo=[];addLog(`Unloaded ${placed} troop(s).`,'good');
+  } else if(action==='open-rescenter'){
+    const popup=document.getElementById('research-center-popup');
+    buildRcPopup(pid);
+    popup.style.display=popup.style.display==='none'?'block':'none';
+    return;
+  }
+  render();renderMinimap();
+}
+
+function predict(){
+  const p=curPlayer();
+  if(wfOf(p.id)<1){flashAlert('NO WORKFORCE','#BA7517');return;}
+  spendWF(p.id,1);
+  const ok=Math.random()<0.33;const left=p.disasterAt-G.round;
+  let msg;
+  if(playerCount()>1){msg=ok?`Scouts: ~${left} rounds.`:'Scouts: ~'+(1+Math.floor(Math.random()*20))+' rounds (unverified).';}
+  else{const ds=['Heat','Windstorm','Invasion'];if(ok){msg=Math.random()<.5?`Scouts: "${ds[Math.floor(Math.random()*3)]}" coming.`:`Scouts: ~${left} rounds.`;}else msg=`Scouts: "${ds[Math.floor(Math.random()*3)]}" in ~${1+Math.floor(Math.random()*20)} rounds (unverified).`;}
+  p.predictMsg=msg;addLog(msg,'warn');p.predLog.push({round:G.round,msg});
+  if(isTeamGame())teammates(p.id).forEach(tid=>{G.players[tid].predLog.push({round:G.round,msg:`[${p.name}]: ${msg}`});addLog(`[${p.name}]: ${msg}`,'warn',tid);});
+  render();
+}
+
+// ═══════════════════════════════════════════
+// RESEARCH CENTER POPUP
+// ═══════════════════════════════════════════
+const RC_UPGRADE_COST=20;
+function buildRcPopup(pid){
+  const p=G.players[pid];
+  const content=document.getElementById('rc-inline');
+  if(!content)return;
+  content.innerHTML='<div style="font-size:9px;font-weight:600;color:#7755bb;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px;">Research Center</div>';
+  TECH_NAMES.forEach((name,ti)=>{
+    const cur=p.tech[ti];
+    const canAfford=goldOf(pid)>=RC_UPGRADE_COST;
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;justify-content:space-between;align-items:center;padding:2px 0;border-bottom:.5px solid #e0d8f5;font-size:10px;';
+    row.innerHTML=`<span style="color:#444">${name} <span style="color:#888">(${cur}→${cur+1})</span></span>`;
+    const btn=document.createElement('button');
+    btn.textContent='$'+RC_UPGRADE_COST;
+    btn.style.cssText='padding:1px 7px;border-radius:4px;border:.5px solid #7755bb;background:#ede8ff;cursor:pointer;font-size:10px;font-weight:500;';
+    btn.disabled=!canAfford;
+    if(!canAfford)btn.style.opacity='.4';
+    btn.onclick=(e)=>{
+      e.stopPropagation();
+      if(goldOf(G.turn)<RC_UPGRADE_COST){flashAlert('CANNOT AFFORD','#E24B4A');return;}
+      spendGold(G.turn,RC_UPGRADE_COST);p.tech[ti]++;
+      addLog(`${name} → lvl ${p.tech[ti]} (-$${RC_UPGRADE_COST}).`,'good');
+      buildRcPopup(G.turn);render();
+    };
+    row.appendChild(btn);content.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════
+// RENDERING
+// ═══════════════════════════════════════════
+const cvEl=document.getElementById('W');
+function wts(r,c){return{x:cam.x+c*TILE_PX*cam.zoom,y:cam.y+r*TILE_PX*cam.zoom};}
+function stw(sx,sy){return{r:Math.floor((sy-cam.y)/(TILE_PX*cam.zoom)),c:Math.floor((sx-cam.x)/(TILE_PX*cam.zoom))};}
+function viewport(){const tz=TILE_PX*cam.zoom;return{rMin:Math.floor(-cam.y/tz)-2,rMax:Math.ceil((cvEl.height-cam.y)/tz)+2,cMin:Math.floor(-cam.x/tz)-2,cMax:Math.ceil((cvEl.width-cam.x)/tz)+2};}
+
+function render(){
+  if(!G)return;
+  updateHUD();updateSidebar();
+  const ctx=cvEl.getContext('2d');
+  const tz=TILE_PX*cam.zoom;
+  const{rMin,rMax,cMin,cMax}=viewport();
+  const pid=G.turn;
+  ctx.fillStyle='#2a4519';ctx.fillRect(0,0,cvEl.width,cvEl.height);
+  for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++){const{x,y}=wts(r,c);ctx.fillStyle=((r+c)%2===0)?'#2e4d1e':'#2a4519';ctx.fillRect(x,y,tz,tz);}
+  ctx.strokeStyle='rgba(255,255,255,0.04)';ctx.lineWidth=.5;
+  for(let r=rMin;r<=rMax+1;r++){const y=cam.y+r*tz;ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cvEl.width,y);ctx.stroke();}
+  for(let c=cMin;c<=cMax+1;c++){const x=cam.x+c*tz;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cvEl.height);ctx.stroke();}
+  const pad=1,rad=Math.max(2,tz*.1);
+  for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++){
+    const visible=canSee(pid,r,c);
+    const t=gc(r,c)||(visible?lazyCell(r,c):null);if(!t)continue;
+    const{x,y}=wts(r,c);const sz=tz-pad*2;const isSel=G.selected&&G.selected[0]===r&&G.selected[1]===c;
+    if(!visible){ctx.fillStyle='rgba(20,35,12,0.65)';ctx.beginPath();ctx.roundRect(x+pad,y+pad,sz,sz,rad);ctx.fill();continue;}
+    const cols=TCOLORS[t.type]||['#ccc','#999'];
+    ctx.fillStyle=cols[0];ctx.beginPath();ctx.roundRect(x+pad,y+pad,sz,sz,rad);ctx.fill();
+    if(t.owner!==null&&t.owner!==undefined){ctx.fillStyle=PCOLORS[t.owner]?.[0]||'rgba(0,0,0,.1)';ctx.beginPath();ctx.roundRect(x+pad,y+pad,sz,sz,rad);ctx.fill();}
+    ctx.strokeStyle=isSel?'#378ADD':(t.owner!==null?PCOLORS[t.owner]?.[1]||cols[1]:cols[1]);
+    ctx.lineWidth=isSel?Math.max(2,tz*.055):Math.max(.5,tz*.03);
+    ctx.beginPath();ctx.roundRect(x+pad,y+pad,sz,sz,rad);ctx.stroke();
+    if(tz>=18&&EMO[t.type]){ctx.font=`${Math.max(8,tz*.34)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(EMO[t.type],x+tz/2,y+tz/2);}
+    if(tz>=26&&t.hp>0&&t.owner!==null&&t.type!==T.WATER&&t.type!==T.FIRE){ctx.font=`${Math.max(7,tz*.13)}px system-ui`;ctx.fillStyle='rgba(0,0,0,.55)';ctx.textAlign='right';ctx.textBaseline='bottom';ctx.fillText('♥'+t.hp,x+tz-3,y+tz-2);}
+    if(t.wild&&!t.owner&&tz>=28){ctx.font=`bold ${Math.max(7,tz*.12)}px system-ui`;ctx.fillStyle='#1D9E75';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('FREE',x+3,y+3);}
+    if(t.type===T.FIRE&&t.fireAge>=1&&tz>=24){ctx.font=`${Math.max(7,tz*.12)}px system-ui`;ctx.fillStyle='#a03';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('→ruins',x+3,y+3);}
+    if(t.type===T.RESEARCH&&t.owner===pid&&tz>=24){const rp=G.players[pid];ctx.font=`${Math.max(7,tz*.11)}px system-ui`;ctx.fillStyle='#5567cc';ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText(`t${rp.researchTimer}/2`,x+tz-3,y+3);}
+  }
+  // Buy-land overlay
+  if(G.activeAction==='buy-land'){
+    for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++){
+      if(!canSee(pid,r,c))continue;const ct=gc(r,c);
+      if(ct&&!(ct.wild&&ct.owner===null))continue;if(ct&&(ct.type===T.FIRE||ct.type===T.RUINS))continue;
+      const adjOk=adjOwned(r,c,pid)||(isTeamGame()&&teammates(pid).some(tid=>adjOwned(r,c,tid)));if(!adjOk)continue;
+      const{x,y}=wts(r,c);const sz=tz-pad*2;
+      ctx.fillStyle='rgba(100,200,80,.3)';ctx.strokeStyle='#5a9e30';ctx.lineWidth=1.5;ctx.beginPath();ctx.roundRect(x+pad,y+pad,sz,sz,rad);ctx.fill();ctx.stroke();
+      if(tz>=18){ctx.font=`bold ${Math.max(10,tz*.4)}px system-ui`;ctx.fillStyle='rgba(60,150,40,.9)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('+',x+tz/2,y+tz/2);}
+    }
+  }
+  // Claim-wild overlay
+  if(G.activeAction==='claim-wild'){
+    for(let r=rMin;r<=rMax;r++)for(let c=cMin;c<=cMax;c++){
+      if(!canSee(pid,r,c))continue;const t=gc(r,c)||lazyCell(r,c);
+      if(!t||!t.wild||t.owner!==null)continue;
+      const adjOk=adjOwned(r,c,pid)||(isTeamGame()&&teammates(pid).some(tid=>adjOwned(r,c,tid)));if(!adjOk)continue;
+      const{x,y}=wts(r,c);const sz=tz-pad*2;
+      ctx.fillStyle='rgba(40,200,120,.35)';ctx.strokeStyle='#1D9E75';ctx.lineWidth=2;ctx.beginPath();ctx.roundRect(x+pad,y+pad,sz,sz,rad);ctx.fill();ctx.stroke();
+      if(tz>=18){ctx.font=`bold ${Math.max(9,tz*.3)}px system-ui`;ctx.fillStyle='#0F6E56';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('✓',x+tz/2,y+tz/2);}
+    }
+  }
+  // Troops
+  const troopsByTile={};
+  for(const tr of G.troops){if(!canSee(pid,tr.r,tr.c))continue;const k2=key(tr.r,tr.c);if(!troopsByTile[k2])troopsByTile[k2]=[];troopsByTile[k2].push(tr);}
+  const OFFSETS=[[.72,.28],[.28,.28],[.72,.65],[.28,.65],[.50,.47],[.50,.10]];
+  for(const k2 in troopsByTile){
+    const tlist=troopsByTile[k2];const{r:tr0r,c:tr0c}=pk(k2);const{x,y}=wts(tr0r,tr0c);const count=tlist.length;
+    tlist.forEach((tr,idx)=>{
+      const isInv=tr.type==='invader';
+      const pc=isInv?['','#E24B4A','']:PCOLORS[tr.owner]||PCOLORS[0];
+      const isSel=G.selectedTroop===tr.id;
+      const off=count===1?[.72,.28]:OFFSETS[idx]||[.5,.5];
+      const sz=count===1?tz*.4:Math.max(8,tz*(count<=2?.36:count<=4?.30:.26));
+      const cx2=x+tz*off[0],cy2=y+tz*off[1];
+      ctx.fillStyle='rgba(0,0,0,.2)';ctx.beginPath();ctx.ellipse(cx2+1,cy2+sz/2+1,sz/2,sz/6,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=tr.moved&&!isInv?pc[1]+'99':pc[1];ctx.beginPath();ctx.arc(cx2,cy2,sz/2,0,Math.PI*2);ctx.fill();
+      if(isSel){ctx.strokeStyle='#fff';ctx.lineWidth=Math.max(1.5,tz*.035);ctx.stroke();}
+      const typeLabel={soldier:'S',tank:'T',sniper:'Sn',mech:'M',bomber:'B',carrier:'C'};
+      const label=isInv?(tr.isTank?'T':'S'):typeLabel[tr.type]||'?';
+      ctx.font=`bold ${Math.max(6,sz*.5)}px system-ui`;ctx.fillStyle=tr.moved&&!isInv?'rgba(255,255,255,.55)':'#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(label,cx2,cy2);
+      if(tr.type==='carrier'&&tr.cargo&&tr.cargo.length>0&&tz>=22&&count<=3){ctx.font=`${Math.max(5,sz*.4)}px system-ui`;ctx.fillText('['+tr.cargo.length+']',cx2,cy2+sz*.52+3);}
+      if(tz>=28&&(count<=3||isSel)){
+        const maxHp=isInv?tr.dmg*3:({soldier:SOLDIER_RANKS[tr.rank]?.[2]||2,tank:6,sniper:3,mech:20,bomber:10,carrier:tr.maxHp||30}[tr.type]||2);
+        const bw=sz*.9,bh=2.5,bx=cx2-bw/2,by=cy2+sz/2+2;
+        ctx.fillStyle='rgba(0,0,0,.4)';ctx.fillRect(bx,by,bw,bh);
+        ctx.fillStyle=tr.hp/maxHp>.5?'#5DCAA5':'#E24B4A';ctx.fillRect(bx,by,bw*(Math.min(1,tr.hp/Math.max(1,maxHp))),bh);
+      }
+    });
+    if(count>1&&tz>=20){ctx.fillStyle='rgba(0,0,0,.65)';ctx.beginPath();ctx.arc(x+8,y+tz-8,7,0,Math.PI*2);ctx.fill();ctx.font=`bold ${Math.max(7,tz*.12)}px system-ui`;ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(count,x+8,y+tz-8);}
+  }
+  // Move range + attack range overlays
+  if(G.selectedTroop!==null){
+    const selTr=G.troops.find(t=>t.id===G.selectedTroop);
+    if(selTr&&canSee(pid,selTr.r,selTr.c)){
+      // Move range (white)
+      const spd=troopSpdOf(selTr);
+      for(let dr=-spd;dr<=spd;dr++)for(let dc=-spd;dc<=spd;dc++){
+        if(Math.abs(dr)+Math.abs(dc)>spd||(!dr&&!dc))continue;
+        const nr=selTr.r+dr,nc=selTr.c+dc;if(!canSee(pid,nr,nc))continue;
+        const{x:nx,y:ny}=wts(nr,nc);
+        ctx.fillStyle='rgba(255,255,255,.10)';ctx.strokeStyle='rgba(255,255,255,.35)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(nx+pad,ny+pad,tz-pad*2,tz-pad*2,rad);ctx.fill();ctx.stroke();
+      }
+      // Attack range (red tint) for ranged troops
+      const atk=troopRangeOf(selTr);
+      if(atk>0){
+        for(let dr=-atk;dr<=atk;dr++)for(let dc=-atk;dc<=atk;dc++){
+          if(Math.abs(dr)+Math.abs(dc)>atk)continue;
+          const nr=selTr.r+dr,nc=selTr.c+dc;if(!canSee(pid,nr,nc))continue;
+          const{x:nx,y:ny}=wts(nr,nc);
+          ctx.fillStyle='rgba(220,60,60,.12)';ctx.strokeStyle='rgba(220,60,60,.3)';ctx.lineWidth=1;
+          ctx.beginPath();ctx.roundRect(nx+pad,ny+pad,tz-pad*2,tz-pad*2,rad);ctx.fill();ctx.stroke();
+        }
+      }
+    }
+  }
+  // Cannon range overlay when cannon tile is selected
+  if(G.selected){
+    const[sr,sc2]=G.selected;const selTile=gc(sr,sc2);
+    if(selTile&&selTile.type===T.CANNON&&selTile.owner===pid){
+      const fx=techFx(pid);
+      const cRange=fx.cannonRange+fx.cannonDefRangeBonus;
+      for(let dr=-cRange;dr<=cRange;dr++)for(let dc=-cRange;dc<=cRange;dc++){
+        if(Math.abs(dr)+Math.abs(dc)>cRange)continue;
+        const nr=sr+dr,nc=sc2+dc;if(!canSee(pid,nr,nc))continue;
+        const{x:nx,y:ny}=wts(nr,nc);
+        ctx.fillStyle='rgba(220,60,60,.10)';ctx.strokeStyle='rgba(220,60,60,.28)';ctx.lineWidth=1;
+        ctx.beginPath();ctx.roundRect(nx+pad,ny+pad,tz-pad*2,tz-pad*2,rad);ctx.fill();ctx.stroke();
+      }
+    }
+  }
+}
+
+function updateHUD(){
+  if(!G)return;
+  const pid=G.turn,p=G.players[pid];
+  const ge=id=>document.getElementById(id);
+  const badge=ge('player-badge');if(badge){badge.textContent=p.name;badge.style.background=PCOLORS[pid][2];}
+  const hg=ge('hud-gold');if(hg)hg.textContent='$'+goldOf(pid);
+  const hw=ge('hud-wf');if(hw)hw.textContent=wfOf(pid);
+  const hr=ge('hud-round');if(hr)hr.textContent=G.round;
+  const shp=p.castles.reduce((s,[r,c])=>{const t=gc(r,c);return s+(t&&t.type===T.START&&t.owner===pid?t.hp:0);},0);
+  const hpEl=ge('hud-starthp');if(hpEl){hpEl.textContent=shp;hpEl.className='stat-val'+(shp<8?' danger':'');}
+  const hs=ge('hud-score');if(hs)hs.textContent=gameMode!=='siege'?calcScore(pid):'Wave '+(G.siegeWave||0);
+  // Enemy stats
+  const enemyDiv=ge('hud-enemies');
+  if(enemyDiv){
+    const enemies=G.players.filter(q=>q.alive&&q.id!==pid&&!teammates(pid).includes(q.id));
+    if(enemies.length===0){enemyDiv.innerHTML='';return;}
+    enemyDiv.innerHTML=enemies.map(q=>{
+      const qHp=q.castles.reduce((s,[r,c])=>{const t=gc(r,c);return s+(t&&t.type===T.START&&t.owner===q.id?t.hp:0);},0);
+      const qTroops=G.troops.filter(t=>t.owner===q.id);
+      const typeLabel={soldier:'S',tank:'T',sniper:'Sn',mech:'M',bomber:'B',carrier:'C'};
+      const troopStr=qTroops.length
+        ? qTroops.map(t=>`<span title="HP:${t.hp} Dmg:${troopDmgOf(t)} Spd:${troopSpdOf(t)}">${typeLabel[t.type]||'?'}${t.hp}</span>`).join(' ')
+        : '—';
+      const col=PCOLORS[q.id][2];
+      return `<div style="border:.5px solid ${col};border-radius:8px;padding:2px 7px;font-size:10px;background:${PCOLORS[q.id][0]};display:flex;gap:5px;align-items:center;flex-wrap:wrap;max-width:220px;">
+        <span style="font-weight:600;color:${col}">${q.name}</span>
+        <span style="color:#555">$${q.gold}</span>
+        <span style="color:${qHp<6?'#E24B4A':'#555'}">♥${qHp}</span>
+        <span style="color:${col};font-size:9px;">${troopStr}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+function updateSidebar(){
+  if(!G)return;
+  const pid=G.turn,p=G.players[pid];
+  document.getElementById('predict-panel').textContent=p.predictMsg;
+  document.getElementById('log-entries').innerHTML=p.log.slice(0,40).map(e=>`<div class="le ${e.cls||''}">${e.msg}</div>`).join('');
+  document.getElementById('tech-display').textContent=TECH_NAMES.map((n,i)=>`${n.slice(0,3)}:${p.tech[i]}`).join(' | ');
+  const sel=G.selected;const t=sel?(gc(sel[0],sel[1])||lazyCell(sel[0],sel[1])):null;
+  if(t){const on=t.owner!==null?G.players[t.owner]?.name:'Unclaimed';document.getElementById('sel-title').textContent=t.type.replace('_',' ')+(t.wild?' (wild)':'');document.getElementById('sel-desc').textContent=`HP: ${t.hp} | ${on} | (${sel[0]},${sel[1]})`;}
+  else{document.getElementById('sel-title').textContent='None';document.getElementById('sel-desc').textContent='Click tile to select, click again for actions.';}
+  const tr=sel?troopAt(sel[0],sel[1]):null;
+  if(tr&&tr.owner===pid){const spd=troopSpdOf(tr),dmg=troopDmgOf(tr),range=troopRangeOf(tr);document.getElementById('troop-info').textContent=`${tr.type} | HP:${tr.hp} | Spd:${spd} | Dmg:${dmg}${range?` | Rng:${range}`:''}${tr.moved?' | Moved':''}`;}
+  else if(G.selectedTroop!==null){const tr2=G.troops.find(t=>t.id===G.selectedTroop);if(tr2)document.getElementById('troop-info').textContent=`Moving ${tr2.type} — click destination (${troopSpdOf(tr2)} tiles)`;}
+  else document.getElementById('troop-info').textContent='';
+  const b=id=>document.getElementById(id);const fx=techFx(pid);
+  const sd=(id,val)=>{const el=b(id);if(el)el.style.display=val;};
+  sd('btn-build-techlab',fx.hasTank?'block':'none');
+  sd('btn-build-cannon',fx.hasCannon?'block':'none');
+  sd('btn-build-airport',fx.hasAirport?'block':'none');
+  sd('btn-build-wall',fx.hasWall?'block':'none');
+  sd('btn-repair-wall',fx.hasWall?'block':'none');
+  const hasRC=Object.values(world).some(t=>t.type===T.RESCENTER&&t.owner===pid);
+  sd('btn-open-rescenter',hasRC?'block':'none');
+  if(!hasRC){const rcil=document.getElementById('rc-inline');if(rcil)rcil.style.display='none';}
+  sd('btn-recruit-tank',fx.hasTank?'block':'none');
+  sd('btn-recruit-sniper',fx.hasSniper?'block':'none');
+  sd('btn-recruit-mech',fx.hasMech?'block':'none');
+  sd('btn-recruit-bomber',fx.hasAirport?'block':'none');
+  sd('btn-recruit-carrier',fx.hasCarrier?'block':'none');
+  sd('btn-attack',playerCount()>1?'block':'none');
+  const setClass=(id,cls)=>{const el=b(id);if(el)el.className=cls;};
+  setClass('btn-move-troop','abtn grn'+(G.selectedTroop!==null?' active':''));
+  setClass('btn-claim-wild','abtn grn'+(G.activeAction==='claim-wild'?' active':''));
+  setClass('btn-buy-land','abtn'+(G.activeAction==='buy-land'?' active':''));
+  const techPop=document.getElementById('tech-popup');
+  if(techPop&&techPop.style.display==='block'){
+    const tpc=document.getElementById('tech-popup-content');
+    if(tpc)tpc.innerHTML=TECH_NAMES.map((n,ti)=>{const cur=p.tech[ti];return`<div class="tech-tree"><div class="tech-tree-name">${n} (${cur})</div>${Array.from({length:Math.min(cur+2,30)},(_,l)=>`<span class="tech-lvl${l+1<=cur?' active':''}">${l+1}</span>`).join('')}</div>`;}).join('');
+  }
+  const ple=document.getElementById('pred-log-entries');
+  if(ple)ple.innerHTML=p.predLog.slice().reverse().map(e=>`<div class="pl-entry">R${e.round}: ${e.msg}</div>`).join('')||'<div style="color:#aaa">None yet.</div>';
+}
+
+// ── Minimap ─────────────────────────────────
+function renderMinimap(){
+  if(!G)return;
+  const mc=document.getElementById('MC'),ctx=mc.getContext('2d');
+  const W=mc.width,H=mc.height;ctx.fillStyle='#2a4519';ctx.fillRect(0,0,W,H);
+  let rMin=Infinity,rMax=-Infinity,cMin=Infinity,cMax=-Infinity;
+  for(const k in world){const t=world[k];if(t.owner!==null){const p=pk(k);rMin=Math.min(rMin,p.r);rMax=Math.max(rMax,p.r);cMin=Math.min(cMin,p.c);cMax=Math.max(cMax,p.c);}}
+  if(!isFinite(rMin)){rMin=rMax=cMin=cMax=0;}
+  const span=Math.max(rMax-rMin+1,cMax-cMin+1,16);
+  const ts=Math.max(1,Math.floor(Math.min(W,H)/span));
+  const oR=Math.floor(H/2-(rMin+rMax)/2*ts),oC=Math.floor(W/2-(cMin+cMax)/2*ts);
+  for(const k in world){const t=world[k];const{r,c}=pk(k);const x=oC+c*ts,y=oR+r*ts;if(x<0||x>=W||y<0||y>=H)continue;ctx.fillStyle=t.wild&&!t.owner?'#7ab820':t.owner!==null?PCOLORS[t.owner][1]:(TCOLORS[t.type]||['#ccc'])[0];ctx.fillRect(x,y,Math.max(1,ts-1),Math.max(1,ts-1));}
+  for(const tr of G.troops){const x=oC+tr.c*ts,y=oR+tr.r*ts;if(x<0||x>=W||y<0||y>=H)continue;ctx.fillStyle=tr.type==='invader'?'#E24B4A':PCOLORS[tr.owner]?.[1]||'#378ADD';ctx.fillRect(x,y,Math.max(2,ts),Math.max(2,ts));}
+  const tz=TILE_PX*cam.zoom;ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1;
+  ctx.strokeRect(oC+(-cam.x/tz)*ts,oR+(-cam.y/tz)*ts,(cvEl.width/tz)*ts,(cvEl.height/tz)*ts);
+}
+
+// ── Context Menu ─────────────────────────────
+function showCtxMenu(sx,sy,r,c){
+  if(!G||G.gameOver)return;
+  const pid=G.turn;const t=gc(r,c)||lazyCell(r,c);
+  const wf=wfOf(pid),gold=goldOf(pid),fx=techFx(pid);
+  const adjOk=adjOwned(r,c,pid)||(isTeamGame()&&teammates(pid).some(tid=>adjOwned(r,c,tid)));
+  const own=t?t.owner:null,tp=t?t.type:null;
+  const tr=troopAt(r,c);
+  const menu=document.getElementById('ctx-menu'),items=document.getElementById('cm-items');
+  if(!menu||!items)return;
+  const cmTitle=document.getElementById('cm-title');
+  if(cmTitle)cmTitle.textContent=tp?tp.replace('_',' ')+` (${r},${c})`:`(${r},${c})`;
+  items.innerHTML='';
+  function ai(label,cost,action,disabled=false){const btn=document.createElement('button');btn.className=disabled?'disabled':'';btn.innerHTML=`${label}<span class="cm-cost">${cost}</span>`;if(!disabled)btn.onclick=()=>{hideCtxMenu();G.selected=[r,c];doAction(action,r,c);};items.appendChild(btn);}
+  if((!t||(t.wild&&t.owner===null))&&adjOk&&!(t&&(t.type===T.FIRE||t.type===T.RUINS)))ai('Buy Land','$1','buy-land',gold<1);
+  if(t&&t.wild&&!own&&adjOk)ai('Claim Wild','free','claim-wild');
+  if(tp===T.LAND&&own===pid){
+    ai('Plant Crop','$1','plant-crop',gold<1);
+    ai('Build House','$'+(Math.max(1,2-fx.housePriceDiscount)),'build-house');
+    ai('Add Water','$'+(Math.max(1,5-fx.waterPriceDiscount)),'add-water');
+    ai('Research Station','$3','build-research',gold<3);
+    ai('Research Center','$15','build-rescenter',gold<15);
+    ai('Barracks','$'+(Math.max(5,10-fx.barracksCostDiscount)),'build-barracks');
+    if(fx.hasTank)ai('Tech Lab','$20','build-techlab',gold<20);
+    if(fx.hasCannon)ai('Cannon','$4','build-cannon',gold<4);
+    if(fx.hasAirport)ai('Airport','$25','build-airport',gold<25);
+    if(fx.hasWall)ai('Wall','$7','build-wall',gold<7);
+    ai('Castle','$100','build-castle',gold<100);
+    ai('Sell Land','→$1','sell');
+  }
+  if(tp===T.HOUSE&&own===pid)ai('Sell House','→$2','sell');
+  if(tp===T.WATER&&own===pid)ai('Sell Water','→$3','sell');
+  if(tp===T.RUINS&&own===pid)ai('Clear Ruins','$1','clear-ruins',gold<1);
+  if(tp===T.START&&own===pid)ai('Repair Castle','$5/+1HP','repair-start',gold<5||t.hp>=20);
+  if(tp===T.WALL&&own===pid)ai('Repair Wall','$1/hp','repair-wall',gold<1);
+  if(tp===T.BARRACKS&&own===pid){ai('Upgrade Barracks','$15','upgrade-barracks');ai('Recruit Soldier','1WF','recruit-soldier',wf<1);}
+  if(tp===T.TECHLAB&&own===pid){if(fx.hasTank)ai('Recruit Tank','3WF+$7','recruit-tank');if(fx.hasMech)ai('Recruit Mech','40WF+$40','recruit-mech');}
+  if(tp===T.BARRACKS&&own===pid&&fx.hasSniper)ai('Recruit Sniper','3WF+$2','recruit-sniper',wf<3||gold<2);
+  if(tp===T.AIRPORT&&own===pid){if(fx.hasAirport)ai('Recruit Bomber','6WF+$11','recruit-bomber',gold<11||wf<6);if(fx.hasCarrier)ai('Recruit Carrier','12WF+$20-30','recruit-carrier',gold<10||wf<12);}
+  if(tp===T.RESCENTER&&own===pid){const btn=document.createElement('button');btn.innerHTML='Open Research Center';btn.onclick=()=>{hideCtxMenu();doAction('open-rescenter',r,c);};items.appendChild(btn);}
+  const vO=isTeamGame()?[pid,...teammates(pid)]:[pid];
+  if(tp===T.MATURE&&vO.includes(own)){ai('Harvest ($)','net +$'+(2+fx.matureCropBonus),'harvest-gold',gold<1);ai('Harvest (WF)','+$'+(3+fx.matureCropBonus),'harvest-wf',wf<1);}
+  if(tr&&tr.owner===pid){if(tr.type==='soldier')ai('Upgrade','WF','upgrade-troop',tr.rank>=5);const mb=document.createElement('button');mb.innerHTML='Move Troop';mb.onclick=()=>{hideCtxMenu();G.selectedTroop=tr.id;G.selected=[r,c];addLog('Click destination.','');render();};items.appendChild(mb);}
+  if(own!==null&&own!==pid&&!teammates(pid).includes(own)&&tp!==T.FIRE&&tp!==T.WILD&&tp!==T.WILD_MATURE)ai('Attack (WF)','1WF=1dmg','attack',wf<1);
+  {const btn=document.createElement('button');btn.innerHTML='Harvest All ($)';btn.onclick=()=>{hideCtxMenu();doBulkAction('harvest-all-gold');};items.appendChild(btn);}
+  {const btn=document.createElement('button');btn.innerHTML='Harvest All (WF)';btn.onclick=()=>{hideCtxMenu();doBulkAction('harvest-all-wf');};items.appendChild(btn);}
+  {const btn=document.createElement('button');btn.innerHTML='Plant All Land';btn.onclick=()=>{hideCtxMenu();doBulkAction('plant-all');};items.appendChild(btn);}
+  if(!items.children.length){hideCtxMenu();return;}  const cv2=document.getElementById('W');
+  let mx=sx+8,my=sy-10;
+  if(mx+160>cv2.width-196)mx=sx-160;
+  if(my+items.children.length*26+40>cv2.height)my=sy-items.children.length*26-40;
+  menu.style.left=Math.max(0,mx)+'px';menu.style.top=Math.max(40,my)+'px';menu.style.display='block';
+}
+
+// ═══════════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════════
+function resizeCanvas(){cvEl.width=window.innerWidth;cvEl.height=window.innerHeight;if(G){render();renderMinimap();}}
+window.addEventListener('resize',resizeCanvas);resizeCanvas();
+function centerOn(r,c){cam.x=cvEl.width/2-c*TILE_PX*cam.zoom;cam.y=cvEl.height/2-r*TILE_PX*cam.zoom;}
+
+let drag={active:false};
+cvEl.addEventListener('click',e=>{if(G&&!G.gameOver)handleClick(e.clientX,e.clientY,false);});
+cvEl.addEventListener('contextmenu',e=>{e.preventDefault();if(G&&!G.gameOver)handleClick(e.clientX,e.clientY,true);});
+let touch={active:false,sx:0,sy:0,moved:false};
+cvEl.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;const t=e.touches[0];touch={active:true,sx:t.clientX,sy:t.clientY,moved:false};},{passive:true});
+cvEl.addEventListener('touchmove',e=>{if(!touch.active||e.touches.length!==1)return;const t=e.touches[0];if(Math.abs(t.clientX-touch.sx)>8||Math.abs(t.clientY-touch.sy)>8)touch.moved=true;},{passive:true});
+cvEl.addEventListener('touchend',e=>{if(!touch.active)return;if(!touch.moved&&e.changedTouches.length===1){const t=e.changedTouches[0];handleClick(t.clientX,t.clientY,false);}touch.active=false;});
+cvEl.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.13:.88;const nz=Math.min(MAX_ZOOM,Math.max(MIN_ZOOM,cam.zoom*f));cam.x=e.clientX-(e.clientX-cam.x)*nz/cam.zoom;cam.y=e.clientY-(e.clientY-cam.y)*nz/cam.zoom;cam.zoom=nz;render();renderMinimap();},{passive:false});
+
+function handleClick(sx,sy,isRight){
+  if(!G||G.gameOver)return;
+  hideCtxMenu();
+  const{r,c}=stw(sx,sy);const pid=G.turn;const t=gc(r,c);
+  if(isRight){showCtxMenu(sx,sy,r,c);return;}
+  if(G.activeAction==='buy-land'){
+    const existing=gc(r,c);
+    const isBuyable=!existing||(existing.wild&&existing.owner===null);
+    const adjOk=adjOwned(r,c,pid)||(isTeamGame()&&teammates(pid).some(tid=>adjOwned(r,c,tid)));
+    if(isBuyable&&adjOk){
+      doAction('buy-land',r,c);
+    } else if(existing&&existing.owner===pid){
+      // Clicked own tile — just select it, keep mode active
+      G.selected=[r,c];render();
+    } else {
+      // Clicked somewhere invalid — cancel mode
+      G.activeAction=null;render();
+    }
+    return;
+  }
+  if(G.activeAction==='claim-wild'){
+    const wt=gc(r,c)||lazyCell(r,c);
+    if(wt&&wt.wild&&wt.owner===null){doAction('claim-wild',r,c);}
+    else if(wt&&wt.owner===pid){G.selected=[r,c];render();} // own tile — stay in mode
+    else{G.activeAction=null;render();}
+    return;
+  }
+  if(G.activeAction==='attack'){if(t&&t.owner!==pid&&t.owner!==null&&!teammates(pid).includes(t.owner))doAction('attack',r,c);else{G.activeAction=null;render();}return;}
+  if(G.selectedTroop!==null){doAction('move-troop',r,c);render();renderMinimap();return;}
+  const myTroopsHere=G.troops.filter(t=>t.r===r&&t.c===c&&t.owner===pid);
+  if(myTroopsHere.length>0){const next=cycleSelectTroop(r,c,pid);if(next){G.selectedTroop=next.id;G.selected=[r,c];if(myTroopsHere.length>1){const idx=myTroopsHere.findIndex(t=>t.id===next.id)+1;showToast(`${next.type} (${idx}/${myTroopsHere.length})`);}render();return;}}
+  const tile=gc(r,c)||lazyCell(r,c);
+  // If tile already selected, open context menu on second click
+  if(G.selected&&G.selected[0]===r&&G.selected[1]===c){
+    showCtxMenu(sx,sy,r,c);return;
+  }
+  G.selected=(tile&&canSee(pid,r,c)?[r,c]:null);
+  render();
+}
+
+document.getElementById('minimap').addEventListener('click',e=>{
+  if(!G)return;const rect=e.currentTarget.getBoundingClientRect();const mc=document.getElementById('MC');
+  let rMin=Infinity,rMax=-Infinity,cMin=Infinity,cMax=-Infinity;
+  for(const k in world){const t=world[k];if(t.owner!==null){const p=pk(k);rMin=Math.min(rMin,p.r);rMax=Math.max(rMax,p.r);cMin=Math.min(cMin,p.c);cMax=Math.max(cMax,p.c);}}
+  if(!isFinite(rMin)){rMin=rMax=cMin=cMax=0;}
+  const span=Math.max(rMax-rMin+1,cMax-cMin+1,16);const ts=Math.max(1,Math.floor(Math.min(mc.width,mc.height)/span));
+  const oR=Math.floor(mc.height/2-(rMin+rMax)/2*ts),oC=Math.floor(mc.width/2-(cMin+cMax)/2*ts);
+  cam.x=cvEl.width/2-((e.clientX-rect.left-oC)/ts)*TILE_PX*cam.zoom;
+  cam.y=cvEl.height/2-((e.clientY-rect.top-oR)/ts)*TILE_PX*cam.zoom;
+  render();renderMinimap();
+});
+
+const B=id=>document.getElementById(id);
+B('btn-zi').addEventListener('click',()=>{const f=1.25,nz=Math.min(MAX_ZOOM,cam.zoom*f);cam.x=cvEl.width/2-(cvEl.width/2-cam.x)*nz/cam.zoom;cam.y=cvEl.height/2-(cvEl.height/2-cam.y)*nz/cam.zoom;cam.zoom=nz;render();renderMinimap();});
+B('btn-zo').addEventListener('click',()=>{const f=.8,nz=Math.max(MIN_ZOOM,cam.zoom*f);cam.x=cvEl.width/2-(cvEl.width/2-cam.x)*nz/cam.zoom;cam.y=cvEl.height/2-(cvEl.height/2-cam.y)*nz/cam.zoom;cam.zoom=nz;render();renderMinimap();});
+B('btn-buy-land').addEventListener('click',()=>{G.activeAction=G.activeAction==='buy-land'?null:'buy-land';if(G.activeAction)addLog('Click adjacent tile.');render();});
+B('btn-claim-wild').addEventListener('click',()=>{G.activeAction=G.activeAction==='claim-wild'?null:'claim-wild';if(G.activeAction)addLog('Click wild tile.','good');render();});
+B('btn-plant-crop').addEventListener('click',()=>{if(G.selected)doAction('plant-crop',...G.selected);});
+B('btn-build-house').addEventListener('click',()=>{if(G.selected)doAction('build-house',...G.selected);});
+B('btn-add-water').addEventListener('click',()=>{if(G.selected)doAction('add-water',...G.selected);});
+B('btn-build-research').addEventListener('click',()=>{if(G.selected)doAction('build-research',...G.selected);});
+B('btn-build-rescenter').addEventListener('click',()=>{if(G.selected)doAction('build-rescenter',...G.selected);});
+B('btn-open-rescenter').addEventListener('click',()=>{
+  if(!G)return;
+  const panel=document.getElementById('rc-inline');
+  if(!panel)return;
+  const isOpen=panel.style.display!=='none';
+  if(isOpen){panel.style.display='none';}
+  else{buildRcPopup(G.turn);panel.style.display='block';}
+  const btn=B('btn-open-rescenter');
+  if(btn)btn.className='abtn'+(panel.style.display!=='none'?' active':'');
+});
+B('btn-build-barracks').addEventListener('click',()=>{if(G.selected)doAction('build-barracks',...G.selected);});
+B('btn-upgrade-barracks').addEventListener('click',()=>{if(G.selected)doAction('upgrade-barracks',...G.selected);});
+B('btn-build-techlab').addEventListener('click',()=>{if(G.selected)doAction('build-techlab',...G.selected);});
+B('btn-build-cannon').addEventListener('click',()=>{if(G.selected)doAction('build-cannon',...G.selected);});
+B('btn-build-airport').addEventListener('click',()=>{if(G.selected)doAction('build-airport',...G.selected);});
+B('btn-build-wall').addEventListener('click',()=>{if(G.selected)doAction('build-wall',...G.selected);});
+B('btn-repair-wall').addEventListener('click',()=>{if(G.selected)doAction('repair-wall',...G.selected);});
+B('btn-build-castle').addEventListener('click',()=>{if(G.selected)doAction('build-castle',...G.selected);});
+B('btn-harvest-gold').addEventListener('click',()=>{if(G.selected)doAction('harvest-gold',...G.selected);});
+B('btn-harvest-wf').addEventListener('click',()=>{if(G.selected)doAction('harvest-wf',...G.selected);});
+B('btn-harvest-all').addEventListener('click',()=>{if(!G||G.gameOver)return;doBulkAction('harvest-all-gold');});
+B('btn-harvest-wf-all').addEventListener('click',()=>{if(!G||G.gameOver)return;doBulkAction('harvest-all-wf');});
+B('btn-plant-all').addEventListener('click',()=>{if(!G||G.gameOver)return;doBulkAction('plant-all');});
+B('btn-repair-start').addEventListener('click',()=>{if(G.selected)doAction('repair-start',...G.selected);});
+B('btn-clear-ruins').addEventListener('click',()=>{if(G.selected)doAction('clear-ruins',...G.selected);});
+B('btn-sell').addEventListener('click',()=>{if(G.selected)doAction('sell',...G.selected);});
+B('btn-recruit-troop').addEventListener('click',()=>{if(G.selected)doAction('recruit-soldier',...G.selected);});
+B('btn-recruit-sniper').addEventListener('click',()=>{if(G.selected)doAction('recruit-sniper',...G.selected);});
+B('btn-recruit-tank').addEventListener('click',()=>{if(G.selected)doAction('recruit-tank',...G.selected);});
+B('btn-recruit-mech').addEventListener('click',()=>{if(G.selected)doAction('recruit-mech',...G.selected);});
+B('btn-recruit-bomber').addEventListener('click',()=>{if(G.selected)doAction('recruit-bomber',...G.selected);});
+B('btn-recruit-carrier').addEventListener('click',()=>{if(G.selected)doAction('recruit-carrier',...G.selected);});
+B('btn-upgrade-troop').addEventListener('click',()=>{if(G.selected)doAction('upgrade-troop',...G.selected);});
+B('btn-move-troop').addEventListener('click',()=>{if(!G.selected){flashAlert('SELECT A TROOP','#BA7517');return;}const tr=troopAt(G.selected[0],G.selected[1]);if(tr&&tr.owner===G.turn){G.selectedTroop=G.selectedTroop===tr.id?null:tr.id;if(G.selectedTroop!==null)addLog('Click destination.','');render();}else flashAlert('SELECT A TROOP FIRST','#BA7517');});
+B('btn-attack').addEventListener('click',()=>{G.activeAction=G.activeAction==='attack'?null:'attack';if(G.activeAction)addLog('Click enemy tile.','warn');render();});
+B('btn-predict').addEventListener('click',predict);
+B('btn-force-heat').addEventListener('click',()=>{if(!G)return;triggerDisaster(G.turn,'heat');checkPlayerLose(G.turn);render();renderMinimap();});
+B('btn-force-wind').addEventListener('click',()=>{if(!G)return;triggerDisaster(G.turn,'windstorm');checkPlayerLose(G.turn);render();renderMinimap();});
+B('btn-force-invasion').addEventListener('click',()=>{if(!G)return;triggerDisaster(G.turn,'invasion');checkPlayerLose(G.turn);render();renderMinimap();});
+B('btn-add-gold').addEventListener('click',()=>{if(!G)return;earnGold(G.turn,100);addLog('+$100 (debug).','warn');render();});
+B('btn-end-turn').addEventListener('click',endTurn);
+B('btn-center').addEventListener('click',()=>{if(!G)return;const p=curPlayer();centerOn(p.startR,p.startC);render();renderMinimap();});
+B('btn-switch-center').addEventListener('click',()=>{if(!G)return;const p=curPlayer();const live=p.castles.filter(([r,c])=>{const t=gc(r,c);return t&&t.type===T.START&&t.owner===p.id;});if(!live.length)return;p._castleIdx=((p._castleIdx||0)+1)%live.length;const[r,c]=live[p._castleIdx];centerOn(r,c);render();renderMinimap();showToast(`Castle ${p._castleIdx+1}/${live.length}`);});
+B('btn-restart').addEventListener('click',()=>{if(confirm('Return to main menu?')){const _ms2=document.getElementById('mode-screen');if(_ms2)_ms2.style.display='flex';const _ow3=document.getElementById('overlay-wrap');if(_ow3)_ow3.classList.remove('show');}});
+B('ov-menu').addEventListener('click',()=>{const _ow=document.getElementById('overlay-wrap');if(_ow)_ow.classList.remove('show');const _ms=document.getElementById('mode-screen');if(_ms)_ms.style.display='flex';});
+B('ov-restart').addEventListener('click',()=>{const _ow2=document.getElementById('overlay-wrap');if(_ow2)_ow2.classList.remove('show');startGame(gameMode);});
+B('initials-submit').addEventListener('click',()=>{const ini=B('initials-input')?.value.trim();if(!ini)return;submitScore(_pendingScore,_pendingMode,ini);const f=B('initials-form');if(f)f.style.display='none';renderLeaderboard(_pendingMode);});
+B('pred-log-btn').addEventListener('click',()=>{const el=B('pred-log-panel');if(el)el.style.display=el.style.display==='none'?'block':'none';});
+B('tech-btn').addEventListener('click',()=>{const el=B('tech-popup');if(!el)return;const wasHidden=el.style.display==='none';el.style.display=wasHidden?'block':'none';if(wasHidden&&G)updateSidebar();});
+document.addEventListener('click',e=>{
+  const menu=document.getElementById('ctx-menu');
+  if(menu&&menu.style.display!=='none'&&!menu.contains(e.target))hideCtxMenu();
+  const rcp=document.getElementById('research-center-popup');
+  if(rcp&&rcp.style.display!=='none'&&!rcp.contains(e.target)&&e.target.id!=='btn-build-rescenter')rcp.style.display='none';
+});
+const PAN_SPEED=80;
+window.addEventListener('keydown',e=>{
+  if(!G)return;
+  if(e.key==='Escape'){G.activeAction=null;G.selected=null;G.selectedTroop=null;hideCtxMenu();render();}
+  if(e.key==='Enter'&&!G.gameOver)endTurn();
+  if((e.key==='h'||e.key==='H')&&!G.gameOver){const p=curPlayer();centerOn(p.startR,p.startC);render();renderMinimap();}
+  // Arrow key panning
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='ArrowUp'||e.key==='ArrowDown'){
+    e.preventDefault();
+    const spd=PAN_SPEED*(e.shiftKey?3:1);
+    if(e.key==='ArrowLeft')cam.x+=spd;
+    if(e.key==='ArrowRight')cam.x-=spd;
+    if(e.key==='ArrowUp')cam.y+=spd;
+    if(e.key==='ArrowDown')cam.y-=spd;
+    render();renderMinimap();
+  }
+});
+
+// ═══════════════════════════════════════════
+// TUTORIAL
+// ═══════════════════════════════════════════
+const TUTORIAL_STEPS=[
+  {title:'Welcome to Kingdom Expansion!',body:'You rule a kingdom you must grow, defend, and outlast rivals.\n\nClick Next to begin.',highlight:null,pos:'center'},
+  {title:'Your Castle 🏰',body:'The blue tile is your Start Tile. If destroyed, you lose. It has 20 HP and can be repaired for $5 per HP.',highlight:'#hud-starthp',pos:'below'},
+  {title:'Gold & Workforce',body:'Gold ($) buys buildings and land. Workforce (WF) trains troops and predicts disasters. Houses produce +1 WF per round each.',highlight:'#hud-gold',pos:'below'},
+  {title:'Buying Land',body:'Click "Buy Land" then click any green + tile adjacent to your territory. Each land tile costs $1.',highlight:'#btn-buy-land',pos:'left'},
+  {title:'Wild Crop Fields 🌿',body:'Tiles marked FREE are wild crop fields. Click "Claim Wild" then click an adjacent wild tile to claim it free!',highlight:'#btn-claim-wild',pos:'left'},
+  {title:'Planting & Harvesting',body:'Plant a Crop for $1. Crops have a 33% chance to mature each round (50% near Water). Harvest mature crops for net +$2 or spend WF for +$3.',highlight:'#btn-plant-crop',pos:'left'},
+  {title:'Research Stations & Tech',body:'Build a Research Station ($3) to level up a random tech tree every 2 rounds. Or build a Research Center ($15) to buy upgrades directly for $20 each.\n\nClick 🔬 Tech to view your levels.',highlight:'#btn-build-research',pos:'left'},
+  {title:'Disasters',body:'Every 10–20 rounds: Heat (ignites tiles), Windstorm (destroys unprotected tiles), or Invasion (sends enemy troops). Use "Predict Disaster" for a 33% chance at intel.',highlight:'#btn-predict',pos:'left'},
+  {title:'Troops & Barracks',body:'Build a Barracks ($10), then recruit soldiers (1 WF each). Move troops 1+ tiles per round. Troops on enemy territory deal damage each round.\n\nAdvanced units: Tanks, Snipers, Mechs, Bombers, and Carriers unlock via War tech.',highlight:'#btn-build-barracks',pos:'left'},
+  {title:'Defence Tech & Walls',body:'Research the Defence tech tree to unlock Walls (🧱) — 10 HP barriers that block enemy ground troops but not your own. Cannons (💣) fire automatically each round.',highlight:'#btn-build-wall',pos:'left'},
+  {title:'New Game Modes',body:'• 2v2 Teams: play with a teammate, share resources, spawn as neighbors\n• 2v2 Survival: work together against endless waves\n• Under Siege: 20 rounds to prepare, then survive infinite enemy waves\n\nScores are saved to per-mode leaderboards.',highlight:null,pos:'center'},
+  {title:'Tips & Controls',body:'• Right-click any tile for a context menu\n• Press H to center on your castle\n• Press Enter to end your turn\n• ⇄ cycles between your castles\n• Build a $100 Castle to expand your empire\n\nGood luck!',highlight:null,pos:'center'},
+];
+let _tutStep=0;
+function startTutorial(){const _ms3=document.getElementById('mode-screen');if(_ms3)_ms3.style.display='none';startGame(1);_tutStep=0;showTutStep();}
+function showTutStep(){
+  const steps=TUTORIAL_STEPS;if(_tutStep>=steps.length){endTutorial();return;}
+  const step=steps[_tutStep];
+  const _to=document.getElementById('tutorial-overlay');if(_to)_to.style.display='block';
+  document.getElementById('tut-step-label').textContent=`Step ${_tutStep+1} / ${steps.length}`;
+  document.getElementById('tut-title').textContent=step.title;
+  document.getElementById('tut-body').textContent=step.body;
+  document.getElementById('tut-next').textContent=_tutStep===steps.length-1?'Finish ✓':'Next →';
+  positionTutBox(step);highlightEl(step.highlight);
+}
+function positionTutBox(step){
+  const box=document.getElementById('tutorial-box');const vw=window.innerWidth,vh=window.innerHeight;
+  if(step.pos==='center'){box.style.left=Math.round(vw/2-145)+'px';box.style.top=Math.round(vh/2-110)+'px';}
+  else if(step.pos==='below'&&step.highlight){const el=document.querySelector(step.highlight);if(el){const r=el.getBoundingClientRect();box.style.left=Math.min(vw-300,Math.max(8,Math.round(r.left)))+'px';box.style.top=Math.min(vh-200,Math.round(r.bottom+10))+'px';}else{box.style.left='10px';box.style.top='80px';}}
+  else if(step.pos==='left'&&step.highlight){const el=document.querySelector(step.highlight);if(el){const r=el.getBoundingClientRect();box.style.left=Math.max(8,Math.round(r.left-300))+'px';box.style.top=Math.min(vh-200,Math.max(50,Math.round(r.top)))+'px';}else{box.style.left='10px';box.style.top='200px';}}
+}
+function highlightEl(selector){
+  const hl=document.getElementById('tut-highlight');
+  if(!selector){hl.style.display='none';return;}
+  const el=document.querySelector(selector);
+  if(!el){hl.style.display='none';return;}
+  const r=el.getBoundingClientRect();
+  hl.style.cssText=`display:block;left:${r.left-4}px;top:${r.top-4}px;width:${r.width+8}px;height:${r.height+8}px;position:fixed;border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.45);z-index:80;pointer-events:none;`;
+}
+function endTutorial(){const _to2=document.getElementById('tutorial-overlay');if(_to2)_to2.style.display='none';showToast('Tutorial complete! Good luck 🏰');}
+B('tut-next').addEventListener('click',()=>{_tutStep++;showTutStep();});
+B('tut-skip').addEventListener('click',endTutorial);
+</script>
+</body>
+</html>
